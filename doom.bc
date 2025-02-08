@@ -423,10 +423,6 @@ define void start() {
     init_objects()
 }
 
-define compare(a, b) {
-    return a @ 2 == b @ 2
-}
-
 define void ray_cast() {
     auto c2, a, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
     r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res
@@ -440,6 +436,8 @@ define void ray_cast() {
     uh = uv = 0
     a5 = inf_
 
+    f = 0
+
     /* what scanline we are working on (0-128) */
     for (v = 0; v < w_; v++) {
         c1 = f
@@ -452,21 +450,21 @@ define void ray_cast() {
         scale = 0
 
         /* if a is 0 or 180 then we get a divide by zero error so we ignore the ray */
-        if (compare(a, 0) || compare(a, c_180_)) {
+        if (!a || a == c_180_) {
             a4 = inf_
         } else {
             scale = 20
 
             if (s > 0) {
-                d_b = 64 * ((player_y_ / 64 + 1) @ 0) /* start at the tile in front of the player */
-                dy = 64                               /* increment in whole tiles forward */
-                d_a = 64 * ((player_x_ / 64 + 1) @ 0) /* start with an adjustment to the side of the player */
-                dx = 64 / t                           /* increment 64/t to the side (plot chart) */
+                d_b = 64 * ((player_y_ / 64 + 1) @ 0)   /* start at the tile in front of the player */
+                dy = 64                                 /* increment in whole tiles forward */
+                d_a = player_x_ + (d_b - player_y_) / t /* start with an adjustment to the side of the player */
+                dx = 64 / t                             /* increment 64/t to the side (plot chart) */
             } else {
                 /* otherwise we are facing backwards so we go in the opposite direction */
-                d_b = ((player_y_ / 64) @ 0) * 64 - .0001;
-                dy = -64;
-                d_a = player_x_ + (d_b - player_y_) / t;
+                d_b = ((player_y_ / 64) @ 0) * 64 - .0001
+                dy = -64
+                d_a = player_x_ + (d_b - player_y_) / t
                 dx = -64 / t
             }
             scale = 0
@@ -489,7 +487,7 @@ define void ray_cast() {
         }
 
         /* if we are at 90 or 270 degrees our ray has infinite problems */
-        if (compare(a, c_90_) || compare(a, c_270_)) {
+        if (a == c_90_ || a == c_270_) {
             a5 = inf_
         } else {
             scale = 20
@@ -601,14 +599,14 @@ define void ray_cast() {
                are stored upside down */
             b2 = (band(pat / (2 ^ (16 * b1)), 2 ^ a0) && 1)
 
-            res = !(b2 ||   /* is the color 1 or 0? */ \
+            res = (b2 || /* is the color 1 or 0? */ \
                 (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */ \
                 (dd >= 64 && v) || /* if our change in distance is greater than 64 and v is non 0 */ \
                 (f >= 64*3 && f < 64*4 && v % 4 == y % 4) || /* skip pixels based on distance from player */ \
                 (f >= 64*4 && f < 64*6 && v % 3 == y % 3) || /* this is how the "lighting" is done */ \
                 (f >= 64*6 && v % 2 == y % 2))
 
-            if (res) {
+            if (!res) {
                 /* if after all of the checks we having something to plot */
                 img__setpixel(canvas[], v, y, white_)
             }
@@ -677,7 +675,7 @@ define void tick() {
                 /* if the object is not out of view of the player for 3 frames */
                 /* then move the monster otherwise it can stay hiding */
 
-                if (is_not_valid_location(o_x_[i] + o_d_[i], o_y_[i] + o_dy_[i])) {
+                if (is_not_valid_location(o_x_[i] + o_dx_[i], o_y_[i] + o_dy_[i])) {
                     /* if the enemy hit a wall then reverse its direction of travel */
                     o_dx_[i] = -o_dx_[i]
                     o_dy_[i] = -o_dy_[i]
@@ -725,17 +723,17 @@ define void tick() {
         scale = 20
         tx = cos(player_rotation_)
         ty = sin(player_rotation_)
+        z = sqrt(tx * tx + ty * ty)
         scale = 0
 
         for (i = 0; i < length(o_[]); i++) if (o_[i]) {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
-            z = sqrt(tx * tx + ty * ty)
 
             scale = 20
             o_d_[i] = sqrt(x * x + y * y) /* distance */
-            o_a_[i] = acos((tx * x + ty * y) / o_d_[i] * z)
-            if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
+            o_a_[i] = acos((tx * x + ty * y) / (o_d_[i] * z))
+            if (tx * x - ty * y < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
 
             scale = 0
         }
@@ -743,9 +741,11 @@ define void tick() {
         sort_o()
 
         for (i = 0; i < length(o_[]); i++) if (o_[i]) {
-            scale = 20; ht = (64 / o_d_[i] * dist_to_proj_plane_) @ 0; scale = 0
+            scale = 20
+            ht = (64 / o_d_[i] * dist_to_proj_plane_) @ 0
             k = (player_eye_level_ - ht / 2) @ 0
             l = (player_eye_level_ + ht / 2) @ 0
+            scale = 0
 
             if (k < 0) k = 0
 
@@ -758,7 +758,9 @@ define void tick() {
                 pat_mask = sp_healthmask
             }
 
-            o_l_[i] = w_ / 2 + o_a_[i] / r_ - ht / 2
+            scale = 20
+            o_l_[i] = (w_ / 2 + o_a_[i] / r_ - ht / 2) @ 0
+            scale = 0
             o_r_[i] = o_l_[i] + ht
 
             if (o_z_[i]) { /* determines if the object is dead */
