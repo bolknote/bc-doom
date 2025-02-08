@@ -11,7 +11,12 @@ define max(a, b) {
 }
 
 define acos(a) {
-    return a2(sqrt(1 - a ^ 2), a)
+    auto s
+
+    s = 1 - a ^ 2
+    if (s < 0) return 0 /* NaN if JS */
+
+    return a2(sqrt(s), a)
 }
 
 define void swap_array(*arr[], pos1, pos2) {
@@ -408,6 +413,7 @@ define void clear_terminal() {
 define void show_screen(red) {
     print "[H"
     img__out_iterm2(canvas[], zoom_)
+    print "[H"
 }
 
 define void start() {
@@ -784,8 +790,10 @@ define void tick() {
                 }
             }
 
-            if (o_d_[i] > 64 && draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
-                o_c_[i] = 1 /* 1 indicates the monster is visible */
+            if (o_d_[i] > 64) {
+                if (draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
+                    o_c_[i] = 1 /* 1 indicates the monster is visible */
+                }
             } else {
                 o_c_[i] += 1 /* otherwise count frames monster not visible to player */
             }
@@ -809,5 +817,5 @@ clear_terminal()
 
 while (1) {
     tick()
-    u_ = 12
+    u_ = -12
 }
