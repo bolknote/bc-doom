@@ -406,8 +406,9 @@ define void start() {
     player_x_ = player_y_ = 128
     num_killed_ = num_monsters_ = player_rotation_ = 0;
 
-    img__new(canvas[], w_, h_ + 8, white_)
-    draw_number(game_level_, w_ / 2 - 2, h_ / 2, 1)
+    img__new(canvas[], w_, h_ + 8, black_)
+    img__filled_rectangle(canvas[], 0, h_, w_ - 1, h_ + 7, white_)
+    draw_number(game_level_, w_ / 2 - 2, h_ / 2, 0)
 
     show_screen(0)
 
@@ -415,15 +416,16 @@ define void start() {
     init_objects()
 }
 
-define void compare(a, b) {
+define compare(a, b) {
     return a @ 2 == b @ 2
 }
 
 define void ray_cast() {
     auto c2, a, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
-    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat
+    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res
 
-    img__new(canvas[], w_, h_ + 8, white_)
+    img__new(canvas[], w_, h_ + 8, black_)
+    img__filled_rectangle(canvas[], 0, h_, w_ - 1, h_ + 7, white_)
 
     c2 = -f_ /* f_ is the view angle, the larger f_ is the more we cram into the view area */
     a = player_rotation_ + c2
@@ -488,9 +490,7 @@ define void ray_cast() {
                 dx  = 64
                 d_b = player_y_ + (d_a - player_x_) * t
                 dy  = 64 * t
-            }
-            else
-            {
+            } else {
                 d_a = ((player_x_ / 64) @ 0) * 64 - .0001 /* start just behind player */
                 dx  = -64
                 d_b = player_y_ + (d_a - player_x_) * t   /* at 90 and 270, t goes to infinity so multiplying */
@@ -550,7 +550,7 @@ define void ray_cast() {
         /* a0 is the x pixel position in the texture
            u will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
 
-        a0 = u / 4
+        a0 = (u / 4) @ 0
 
         if (dd > 64 && lht > ht) {  /* Lht is the previous scanline height */
             ht = lht
@@ -592,18 +592,16 @@ define void ray_cast() {
                are stored upside down */
             b2 = (band(pat / (2 ^ (16 * b1)), 2 ^ a0) && 1)
 
-            if(
-                !(
-                b2 ||   /* is the color 1 or 0? */
-                (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */
-                (dd >= 64 && v) || /* if our change in distance is greater than 64 and $v is non 0 */
-                (f >= 64*3 && f < 64*4 && v % 4 == y % 4) || /* skip pixels based on distance from player */
-                (f >= 64*4 && f < 64*6 && v % 3 == y % 3) || /* this is how the "lighting" is done */
-                (f >= 64*6 && v % 2 == y % 2)
-                )
-            ) {
+            res = !(b2 ||   /* is the color 1 or 0? */ \
+                (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */ \
+                (dd >= 64 && v) || /* if our change in distance is greater than 64 and $v is non 0 */ \
+                (f >= 64*3 && f < 64*4 && v % 4 == y % 4) || /* skip pixels based on distance from player */ \
+                (f >= 64*4 && f < 64*6 && v % 3 == y % 3) || /* this is how the "lighting" is done */ \
+                (f >= 64*6 && v % 2 == y % 2))
+
+            if (res) {
                 /* if after all of the checks we having something to plot */
-                img__setpixel(canvas[], v, y, black_)
+                img__setpixel(canvas[], v, y, white_)
             }
         }
 
