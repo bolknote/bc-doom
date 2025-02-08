@@ -25,7 +25,6 @@ define void swap_array(*arr[], pos1, pos2) {
 define void base64_encode_and_print(bytes[]) {
     auto i, codes, chunk, len, b, bit, b6, index
 
-    scale = 0
     len = length(bytes[])
 
     for (i = 0; i < len; i+=3) {
@@ -79,8 +78,6 @@ define void img__new(*img[], w, h, bg) {
 /* helper for packing binary data */
 define v_pack(*bytes[], bsize, offset, d) {
     auto i, m
-
-    scale = 0
 
     for (i = 0; i < bsize / 8; i++) {
         d = divmod(d, 256, m[])
@@ -214,7 +211,6 @@ define void img__filled_rectangle(*img[], x1, y1, x2, y2, color) {
 define void img__number_bitmap(*img[], x, y, number, w, h, invert) {
     auto ix, iy, pixel
 
-    scale = 0
     for (iy = 0; iy < h; iy++) for (ix = 0; ix < w; ix++) {
         number = divmod(number, 2, pixel[])
         img__setpixel(img[], x + ix, y + iy, bxor(pixel[0], invert))
@@ -234,19 +230,24 @@ z_ - z-buffer(128)
 */
 
 player_points_ = num_killed_ = num_monsters_ = player_rotation_ = player_x_ = player_y_ = game_level_ =\
-player_dead_ = player_rotation_ = fwd_ = 0
+player_dead_ = player_rotation_ = fwd_ = u_ = 0
 player_health_ = 64
 moved_ = 1
 
 scale = 20
 rad_ = pi(15) / 180   /* used to convert angles to radians */
 f_ = 30 * rad_        /* angle of view (larger distorts the "lens") */
-dist_to_proj_plane_ = 64 / tan(f_) /* 110 pixels */
+dist_to_proj_plane_ = (64 / tan(f_)) @ 0 /* 110 pixels */
 r_ = 2 * f_ / 128     /* this is the angle of each ray to cover 128 pixels */
 
 player_eye_level_ = 32
+inf_ = 1e300
 
-scale = 0
+c_180_ = pi(15)
+c_90_ = c_180_ / 2
+c_270_ = c_180 * 3 / 2
+
+mscale = 0
 
 
 sp_wall       = 115790325841308887754689319541375788545262201015676595078955512853657393562048 /* 16×16 */
@@ -278,7 +279,6 @@ for (i = 0; i < 128; i++) z_[i] = 0
 define void draw_number(number, x, y, invert) {
     auto len, i, digit, m
 
-    scale = 0
     if (number) len = l10(number) @ 0 + 1; else len = 1
 
     for (i = 0; i<len; i++) {
@@ -292,8 +292,6 @@ define void draw_number(number, x, y, invert) {
 }
 
 define is_not_valid_location(x,y) {
-    scale = 0
-
     x /= 64
     y /= 64
 
@@ -326,12 +324,13 @@ define void init_map() {
 define void init_objects() {
     auto i, x, y, type, o_cnt, k
 
-    scale = 0
-    c_cnt = 0
+    om_cnt = 0
 
+    /* clear objects */
     for (i = 0; i < length(o_[]); i++) o_[i] = 0
 
     i = 6 + 4 * game_level_
+
     while (i) {
         x = 64 * (irand(12) + 2)
         y = 64 * (irand(12) + 2)
@@ -403,8 +402,6 @@ define void show_screen(red) {
 }
 
 define void start() {
-    scale = 0
-
     game_level_ += 1
     player_x_ = player_y_ = 128
     num_killed_ = num_monsters_ = player_rotation_ = 0;
@@ -418,22 +415,213 @@ define void start() {
     init_objects()
 }
 
+define void compare(a, b) {
+    return a @ 2 == b @ 2
+}
+
 define void ray_cast() {
+    auto c2, a, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
+    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat
+
     img__new(canvas[], w_, h_ + 8, white_)
 
-    /* TODO */
+    c2 = -f_ /* f_ is the view angle, the larger f_ is the more we cram into the view area */
+    a = player_rotation_ + c2
+    a6 = -1
+    uh = uv = 0
+    a5 = inf_
+
+    /* what scanline we are working on (0-128) */
+    for (v = 0; v < w_; v++) {
+        c1 = f
+        lht = ht
+
+        scale = 20
+        c = cos(a)
+        s = sin(a)
+        t = s / c
+        scale = 0
+
+        /* if a is 0 or 180 then we get a divide by zero error so we ignore the ray */
+        if (compare(a, 0) || compare(a, c_180_)) {
+            a4 = inf_
+        } else {
+            scale = 20
+
+            if (s > 0) {
+                d_b = 64 * ((player_y_ / 64 + 1) @ 0) /* start at the tile in front of the player */
+                dy = 64                               /* increment in whole tiles forward */
+                d_a = 64 * ((player_x_ / 64 + 1) @ 0) /* start with an adjustment to the side of the player */
+                dx = 64 / t                           /* increment 64/t to the side (plot chart) */
+            } else {
+                /* otherwise we are facing backwards so we go in the opposite direction */
+                d_b = ((player_y_ / 64) @ 0) * 64 - .0001;
+                dy = -64;
+                d_a = player_x_ + (d_b - player_y_) / t;
+                dx = -64 / t
+            }
+            scale = 0
+
+            /* while we have not hit a wall tile or edge of the map */
+            while(!is_not_valid_location(d_a, d_b)) {
+                d_a += dx /* keep shooting the ray */
+                d_b += dy
+            }
+
+            q  = d_a  /* store the final location where the ray hits a wall tile */
+            r  = d_b
+            a4 = abs((player_x_ - d_a) / c)
+            uh = d_a % 64;   /* the pattern repeats every 64 pixels. */
+
+            if (s > 0) {
+                uh = 64 - uh    /* flip the pattern */
+            }
+        }
+
+        /* if we are at 90 or 270 degrees our ray has infinite problems */
+        if (compare(a, c_90_) || compare(a, c_270_)) {
+            a5 = inf_
+        } else {
+            scale = 20
+            if (c > 0) {
+                d_a = ((player_x_ / 64 + 1) @ 0) * 64 /* start one tile in front of player */
+                dx  = 64
+                d_b = player_y_ + (d_a - player_x_) * t
+                dy  = 64 * t
+            }
+            else
+            {
+                d_a = ((player_x_ / 64) @ 0) * 64 - .0001 /* start just behind player */
+                dx  = -64
+                d_b = player_y_ + (d_a - player_x_) * t   /* at 90 and 270, t goes to infinity so multiplying */
+                                                          /* results in an invalid number */
+                dy  = -64 * t
+            }
+            scale = 0
+
+            /* again look for the first wall tile we hit */
+            while (!is_not_valid_location(d_a, d_b)) {
+                d_a += dx
+                d_b += dy
+            }
+
+            s = d_a
+            t = d_b
+            scale = 20; a5 = abs((player_x_ - d_a) / c); scale = 0
+            uv = d_b % 64;
+            if (c < 0) {
+                uv = 64 - uv
+            }
+        }
+
+        d = a6
+        /* we are looking for the smallest distance to travel
+           both rays cannot be infinite at once so we pick the one
+           that is not infinite */
+        if (a4 < a5) {
+            u  = uh /* texture scanline */
+            f  = a4 /* distance from camera */
+            a6 = 0
+            o  = q  /* map x position */
+            p  = r  /* map y position */
+        } else {
+            u  = uv /* text scanline */
+            f  = a5 /* distance from camera */
+            a6 = 1
+            o  = s /* map x position */
+            p  = t /* map y position */
+        }
+
+        scale = 20
+        f *= cos(c2)
+        z_[v] = f /* z-buffer, f is the depth of the scanline */
+
+        ht = (64 / f * dist_to_proj_plane_) @ 0 /* height of the scanline */
+        dd = abs(c1 - f) /* change in distance from previous f */
+        k = (player_eye_level_ - ht / 2) @ 0 /* the top of our scanline */
+        l = (player_eye_level_ + ht / 2) @ 0 /* the bottom of the scanline */
+
+        if (k < 0) { /* make sure we are not trying to draw above the view area */
+            k = 0
+        }
+
+        b3 = k  /* starting position for scanning */
+
+        /* a0 is the x pixel position in the texture
+           u will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
+
+        a0 = u / 4
+
+        if (dd > 64 && lht > ht) {  /* Lht is the previous scanline height */
+            ht = lht
+        }
+
+        if (l >= h_) { /* if l is greater than the height of the view area then adjust */
+            l = h_ - 1
+        }
+
+        x = (o / 64) @ 0 /* our tile position */
+        y = (p / 64) @ 0
+
+        scale = 0
+
+        /* if we're out of bounds of the map
+           and the level is less than 5 then
+           alternate wall tiles
+           otherwise use the enemy sprite as a wall
+           tile and alternate it.
+           if we're in bounds then use the default
+           wall tile 0 */
+
+        if ((x<0 || x>15) && (y % 2)) {
+            pat = sp_5k
+        } else {
+            if (game_level_ > 4) pat = sp_enemy; else pat = sp_wall
+        }
+
+        /* start at the top of the scanline and work down */
+        for (y = k; y < l; y++) {
+            /* the row of pixels is based on the current y
+             y position. >>2 divides by 4.  64/4==16 */
+
+            scale = 20
+            b1 = (((y - b3) / ht * 64) / 4) @ 0
+            scale = 0
+
+            /* we're subtracting from 15 because the tiles
+               are stored upside down */
+            b2 = (band(pat / (2 ^ (16 * b1)), 2 ^ a0) && 1)
+
+            if(
+                !(
+                b2 ||   /* is the color 1 or 0? */
+                (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */
+                (dd >= 64 && v) || /* if our change in distance is greater than 64 and $v is non 0 */
+                (f >= 64*3 && f < 64*4 && v % 4 == y % 4) || /* skip pixels based on distance from player */
+                (f >= 64*4 && f < 64*6 && v % 3 == y % 3) || /* this is how the "lighting" is done */
+                (f >= 64*6 && v % 2 == y % 2)
+                )
+            ) {
+                /* if after all of the checks we having something to plot */
+                img__setpixel(canvas[], v, y, black_)
+            }
+        }
+
+        a  += r_  /* increment the ray angle */
+        c2 += r_
+    }
 }
 
 define void swap_o(pos1, pos2) {
-    swap_array(o_a_, pos1, pos2)
-    swap_array(o_c_, pos1, pos2)
-    swap_array(o_d_, pos1, pos2)
-    swap_array(o_i_, pos1, pos2)
-    swap_array(o_l_, pos1, pos2)
-    swap_array(o_r_, pos1, pos2)
-    swap_array(o_x_, pos1, pos2)
-    swap_array(o_y_, pos1, pos2)
-    swap_array(o_z_, pos1, pos2)
+    swap_array(o_a_[], pos1, pos2)
+    swap_array(o_c_[], pos1, pos2)
+    swap_array(o_d_[], pos1, pos2)
+    swap_array(o_i_[], pos1, pos2)
+    swap_array(o_l_[], pos1, pos2)
+    swap_array(o_r_[], pos1, pos2)
+    swap_array(o_x_[], pos1, pos2)
+    swap_array(o_y_[], pos1, pos2)
+    swap_array(o_z_[], pos1, pos2)
 }
 
 define void quicksort_o(left, right) {
@@ -462,18 +650,62 @@ define partition_o(left, right) {
 }
 
 define void sort_o() {
-    quicksort_o(0, length(o_) - 1)
+    quicksort_o(0, length(o_[]) - 1)
 }
 
 define void tick() {
-    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask
+    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd
 
     if (num_monsters_ - num_killed_ < 2) {
         start()
         return
     }
 
-    /* TODO */
+    for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+        if (!o_z_[i]) {
+            if (o_c_[i] < 3) {
+                /* if the object is not out of view of the player for 3 frames */
+                /* then move the monster otherwise it can stay hiding */
+
+                if (is_not_valid_location(o_x_[i] + o_d_[i], o_y_[i] + o_dy_[i])) {
+                    /* if the enemy hit a wall then reverse its direction of travel */
+                    o_dx_[i] = -o_dx_[i]
+                    o_dy_[i] = -o_dy_[i]
+                }
+                /* move the enemy */
+                o_x_[i] += o_dx_[i]
+                o_y_[i] += o_dy_[i]
+
+                moved_ = 1
+            }
+
+            if (!o_i_[i] && abs(o_x_[i] - player_x_) < 64 && abs(o_y_[i] < player_y_) < 64) {
+                /* player ran into a health.  Make it go away and reward the player */
+                /* set cz to 1 so that we do not display the flash of red */
+                o_z_[i] = 1
+                player_health_ += (64 - player_health_) / 4
+                cz = 1
+            }
+        }
+    }
+
+    if (u_) { /* if we are rotating adjust the rotation angle */
+        player_rotation_ -= u_ * rad_ /* playerRotation is the players view angle */
+        moved_ = 1
+    }
+
+    if (fwd_) {
+        scale = 20
+        x_fwd = (player_x_ + fwd * cos(player_rotation_)) @ 0
+        y_fwd = (player_y_ + fwd * sin(player_rotation_)) @ 0
+        scale = 0
+
+        if (!is_not_valid_location(x_fwd, y_fwd)) {
+            player_x_ = x_fwd
+            player_y_ = y_fwd
+            moved_ = 1
+        }
+    }
 
     if (moved_) {
         moved_ = 0
@@ -483,11 +715,11 @@ define void tick() {
         tx = cos(player_rotation_)
         ty = sin(player_rotation_)
 
-        for (i = 0; i < length(o_); i++) if (o_[i]) {
+        for (i = 0; i < length(o_[]); i++) if (o_[i]) {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
 
-            scale = 10
+            scale = 20
             o_d_[i] = sqrt(x * x + y * y) /* distance */
             o_a_[i] = acos((tx * x + ty * y)/o_d_[i])
             if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
@@ -497,10 +729,12 @@ define void tick() {
 
         sort_o()
 
-        for (i = 0; i < length(o_); i++) if (o_[i]) {
-            scale = 20; ht = 64 / o_d_[i] * dist_to_proj_plane_; scale = 0
-            k = player_eye_level_ - ht / 2
-            l = player_eye_level_ + ht / 2
+        for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+            scale = 20; ht = (64 / o_d_[i] * dist_to_proj_plane_) @ 0; scale = 0
+            k = (player_eye_level_ - ht / 2) @ 0
+            l = (player_eye_level_ + ht / 2) @ 0
+
+            if (k < 0) k = 0
 
             /* if i is zero then it is a monster, otherwise it is health */
             if (o_i_[i]) {
