@@ -1,0 +1,560 @@
+#!/usr/bin/env bc -Ll -f
+
+define min(a, b) {
+    if (a < b) return a
+    return b
+}
+
+define max(a, b) {
+    if (a > b) return a
+    return b
+}
+
+define acos(a) {
+    return a2(sqrt(1 - a ^ 2), a)
+}
+
+define void swap_array(*arr[], pos1, pos2) {
+    auto t
+    t = arr[pos1]
+    arr[pos1] = arr[pos2]
+    arr[pos2] = t
+}
+
+/* base64 encode array and print */
+define void base64_encode_and_print(bytes[]) {
+    auto i, codes, chunk, len, b, bit, b6, index
+
+    scale = 0
+    len = length(bytes[])
+
+    for (i = 0; i < len; i+=3) {
+        b6 = 0
+        for (b = 0; b < 24; b++) {
+            index = i + b / 8
+
+            bit = (band(bytes[index] * (2 ^ (b % 8)), 128) && 1)
+            b6 = b6 * 2 + bit
+
+            if (b % 6 == 5) {
+                if (b6 < 26) print asciify(b6 + 65); else
+                if (b6 < 52) print asciify(b6 - 26 + 97); else
+                if (b6 < 62) print asciify(b6 - 52 + 48); else
+                if (b6 < 63) print "+"; else print "/"
+
+                if (index >= len) {
+                    for (;len % 3; len++) print "="
+                    break
+                }
+
+                b6 = 0
+            }
+        }
+    }
+}
+
+/* print array */
+define void print_array(b[]) {
+    auto i
+
+    for (i = 0; i<length(b[]); i++) {
+        print b[i], " "
+    }
+    print "\n"
+}
+
+/***** My own graphics library for bc *****/
+
+black_ = 0
+white_ = 1
+
+/* create new image */
+define void img__new(*img[], w, h, bg) {
+    auto x, y
+    img[0] = w; img[1] = h
+
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) img[2 + x + y * w] = bg
+}
+
+/* helper for packing binary data */
+define v_pack(*bytes[], bsize, offset, d) {
+    auto i, m
+
+    scale = 0
+
+    for (i = 0; i < bsize / 8; i++) {
+        d = divmod(d, 256, m[])
+        bytes[i + offset] = m[0]
+    }
+
+    return i + offset
+}
+
+/* create mono BMP, encode by base64 and print */
+define void img__monobmp(img[]) {
+    auto b, s, bmp, size, i, x, y, wh, p
+
+    scale = 10; wh = ceil(img[0] / 8, 0); scale = 0
+    size = wh * img[1]
+
+    bmp[s++] = 66; bmp[s++] = 77     /* BM */
+    s = v_pack(bmp[], 32, s, 0)      /* space for Length */
+
+    /* Main header */
+    s = v_pack(bmp[], 16, s, 0)      /* Reserved */
+    s = v_pack(bmp[], 16, s, 0)      /* Reserved */
+    s = v_pack(bmp[], 32, s, 32)     /* Offset of image data */
+
+    /* Subheader */
+    s = v_pack(bmp[], 32, s, 12)      /* Subheader length */
+    s = v_pack(bmp[], 16, s, img[0])  /* Width */
+    s = v_pack(bmp[], 16, s, img[1])  /* Height */
+    s = v_pack(bmp[], 16, s, 1)       /* Planes */
+    s = v_pack(bmp[], 16, s, 1)       /* Bit count */
+
+    /* Color table */
+    bmp[s++] = bmp[s++] = bmp[s++] = 0;   /* black */
+    bmp[s++] = bmp[s++] = bmp[s++] = 255; /* white */
+
+    for (y = img[1] - 1; y >=0; y--) {
+        p = bmp[s] = 0
+
+        for (x = 0; x < img[0]; x += 8) {
+            for (b = 0; b < 8; b++) {
+                bmp[s] = bmp[s] * 2 + img[2 + x + b + y * img[0]]
+
+                if (x + b >= img[0]) {
+                    bmp[s] *= 2 ^ (wh - img[0])
+                }
+            }
+            s += 1; p += 1
+        }
+
+        /* Row padding */
+        for (; p % 4; p++) bmp[s++] = 0
+    }
+
+    s = v_pack(bmp[], 32, 2, length(bmp[])) /* Full length */
+
+    base64_encode_and_print(bmp[])
+}
+
+/* Output image to iTerm2 terminal */
+define void img__out_iterm2(img[], ratio) {
+    print "]1337;File=inline=1;width=", img[0] * ratio, "px;height=", img[1] * ratio, "px:"
+    img__monobmp(img[])
+    "" 
+}
+
+/* Set pixel */
+define void img__setpixel(*img[], x, y, color) {
+    if (x < img[0] && y < img[1] && x >= 0 && y >= 0) img[2 + x + y * img[0]] = color
+}
+
+/* Get pixel */
+define img__getpixel(*img[], x, y) {
+    if (x < img[0] && y < img[1]) return img[2 + x + y * img[0]]
+
+    return black_
+}
+
+/* Draw line */
+define void img__line(*img[], x1, y1, x2, y2, color) {
+    auto step, dx, sx, dy, sy, e, t, i
+
+    step = 0
+    dx = abs(x2 - x1)
+    if (x2 - x1 > 0) sx = 1; else sx = -1
+    dy = abs(y2 - y1)
+    if (y2 - y1 > 0) sy = 1; else sy = -1
+
+    if (dy > dx) {
+        step = 1
+        t = x1; x1 = y1; y1 = t
+        t = dx; dx = dy; dy = t
+        t = sx; sx = sy; sy = t
+    }
+
+    e = 2 * dy - dx
+
+    for (i = 0; i < dx; i++) {
+        if (step) img__setpixel(img[], y1, x1, color); else img__setpixel(img[], x1, y1, color)
+
+        while (e >= 0) {
+            y1 += sy
+            e -= 2 * dx
+        }
+
+        x1 += sx
+        e += 2 * dy
+    }
+
+    img__setpixel(img[], x2, y2, color)
+}
+
+/* Draw rectangle */
+define void img__rectangle(*img[], x1, y1, x2, y2, color) {
+    img__line(img[], x1, y1, x2, y1, color);
+    img__line(img[], x2, y1, x2, y2, color);
+    img__line(img[], x2, y2, x1, y2, color);
+    img__line(img[], x1, y2, x1, y1, color);
+}
+
+/* Draw filled rectangle */
+define void img__filled_rectangle(*img[], x1, y1, x2, y2, color) {
+    auto hx, lx, x
+
+    hx = min(max(x1, x2), img[0])
+    lx = max(min(x1, x2), 0)
+
+    for (x = lx; x <= hx; x++) img__line(img[], x, y1, x, y2, color)
+}
+
+/* Draw bitmap */
+define void img__number_bitmap(*img[], x, y, number, w, h, invert) {
+    auto ix, iy, pixel
+
+    scale = 0
+    for (iy = 0; iy < h; iy++) for (ix = 0; ix < w; ix++) {
+        number = divmod(number, 2, pixel[])
+        img__setpixel(img[], x + ix, y + iy, bxor(pixel[0], invert))
+    }
+}
+
+/**** Game code *****/
+
+w_ = 128
+h_ = 64
+zoom_ = 4
+map_size_ = 16 /* 16×16 */
+
+/*
+map_ — map (16×16)
+z_ - z-buffer(128)
+*/
+
+player_points_ = num_killed_ = num_monsters_ = player_rotation_ = player_x_ = player_y_ = game_level_ =\
+player_dead_ = player_rotation_ = fwd_ = 0
+player_health_ = 64
+moved_ = 1
+
+scale = 20
+rad_ = pi(15) / 180   /* used to convert angles to radians */
+f_ = 30 * rad_        /* angle of view (larger distorts the "lens") */
+dist_to_proj_plane_ = 64 / tan(f_) /* 110 pixels */
+r_ = 2 * f_ / 128     /* this is the angle of each ray to cover 128 pixels */
+
+player_eye_level_ = 32
+
+scale = 0
+
+
+sp_wall       = 115790325841308887754689319541375788545262201015676595078955512853657393562048 /* 16×16 */
+sp_5k         = 115791758266903294916915719918405839821729688100733916992900690226762151100415   /* 16×16 */
+sp_enemy      = 3604401011418865210367460462141013802062877445938327180701667453088288998384  /* 16×16 */
+sp_health     = 182510695289447792108503406145689010756701921272 /* 16×10 */
+sp_healthmask = 182512083618159906654138348530557110442727579640 /* 16×10 */
+sp_enemymask  = 3604423010853823540684956828583937595125500288817684492511162279594624025584 /* 16×16 */
+sp_gun        = 6209137752747892285808576448 /* 16×6 */
+sp_gunmask    = 9884328322892686541920929728 /* 16×6 */
+sp_dead       = 5233916999695745241630869441500152816 /* 16×8 */
+sp_deadmask   = 5233996863801635287899056511735301104 /* 16×8 */
+sp_fire       = 38370943585765216485632 /* 16×10 */
+
+font[0] = 31599 /* 3×5 */
+font[1] = 18740 /* 3×5 */
+font[2] = 29671 /* 3×5 */
+font[3] = 31207 /* 3×5 */
+font[4] = 18925 /* 3×5 */
+font[5] = 31183 /* 3×5 */
+font[6] = 31695 /* 3×5 */
+font[7] = 18727 /* 3×5 */
+font[8] = 31727 /* 3×5 */
+font[9] = 18927 /* 3×5 */
+
+for (i = 0; i < 128; i++) z_[i] = 0
+
+/* Draw number */
+define void draw_number(number, x, y, invert) {
+    auto len, i, digit, m
+
+    scale = 0
+    if (number) len = l10(number) @ 0 + 1; else len = 1
+
+    for (i = 0; i<len; i++) {
+        m = 10 ^ (len - i - 1)
+        digit = number / m
+        number -= digit * m
+
+        img__number_bitmap(canvas[], x, y, font[digit], 3, 5, invert)
+        x += 4
+    }
+}
+
+define is_not_valid_location(x,y) {
+    scale = 0
+
+    x /= 64
+    y /= 64
+
+    if (x < 0 || y < 0 || x > map_size_ - 1 || y > map_size_ - 1) {
+        return 1
+    }
+
+    return map_[x + map_size_ * y]
+}
+
+
+/* Init world map */
+define void init_map() {
+    auto i, wall_cnt, x, y
+    for (i = 0; i < map_size_ * map_size_; i++) map_[i] = 0
+
+    wall_cnt = 30 + 4 * game_level_
+
+    while (wall_cnt) {
+        x = irand(map_size_)
+        y = irand(map_size_)
+
+        if (x * y > 4) {
+            map_[x + map_size_ * y] = 1
+            wall_cnt -= 1
+        }
+    }
+}
+
+define void init_objects() {
+    auto i, x, y, type, o_cnt, k
+
+    scale = 0
+    c_cnt = 0
+
+    for (i = 0; i < length(o_[]); i++) o_[i] = 0
+
+    i = 6 + 4 * game_level_
+    while (i) {
+        x = 64 * (irand(12) + 2)
+        y = 64 * (irand(12) + 2)
+        type = ((i % 8) && 1) /* 0 — health, 1 — monster */
+
+        if (!is_not_valid_location(x, y)) {
+            o_x_[o_cnt] = x
+            o_y_[o_cnt] = y
+            o_i_[o_cnt] = type
+            k = 1 - 2 * brand() /* 1 or -1 */
+
+            if (type) {
+                o_dx_[o_cnt] = k * game_level_ * irand(64) / 4
+                o_dy_[o_cnt] = k * game_level_ * irand(64) / 4
+            } else {
+                o_dx_[o_cnt] = 0
+                o_dy_[o_cnt] = 0
+            }
+
+            o_z_[o_cnt] = o_c_[o_cnt] = 0
+
+            o_[o_cnt++] = 1 /* object exists */
+
+            i -= 1
+            num_monsters_ += type
+        }
+    }
+}
+
+define draw_sprite(sprite, sprite_mask, sx, sy, dx, dy, check, invert) {
+    auto height, width, canvas_changed, x, y, px, py, clr, msk
+
+    height = abs(dy - sy)
+    width  = abs(dx - sx)
+    canvas_changed = 0
+
+    if (sy < 0) sy = 0
+    if (dy >= h_) dy = h_ - 1
+
+    for (x = sx; x < dx; x++) {
+        if (x >= 0 && k <= w_ && !(check && (check > z_[x]))) {
+            px = band(16 * (x - sx) / width, 15)
+
+            for (y = sy; y < dy; y++) {
+                py = band(16 * (y - sy) / height, 15)
+
+                clr = (band(sprite / (2 ^ (16 * py)), 2 ^ px) && 1)
+                msk = (band(sprite_mask / (2 ^ (16 * py)), 2 ^ px) && 1)
+
+                if (msk) {
+                    img__setpixel(canvas[], x, y, bxor(clr, invert))
+                    changed = 1
+                }
+            }
+        }
+    }
+
+    return canvas_changed
+}
+
+define void clear_terminal() {
+    print "[2J"
+}
+
+
+define void show_screen(red) {
+    print "[H"
+    img__out_iterm2(canvas[], zoom_)
+}
+
+define void start() {
+    scale = 0
+
+    game_level_ += 1
+    player_x_ = player_y_ = 128
+    num_killed_ = num_monsters_ = player_rotation_ = 0;
+
+    img__new(canvas[], w_, h_ + 8, white_)
+    draw_number(game_level_, w_ / 2 - 2, h_ / 2, 1)
+
+    show_screen(0)
+
+    init_map()
+    init_objects()
+}
+
+define void ray_cast() {
+    img__new(canvas[], w_, h_ + 8, white_)
+
+    /* TODO */
+}
+
+define void swap_o(pos1, pos2) {
+    swap_array(o_a_, pos1, pos2)
+    swap_array(o_c_, pos1, pos2)
+    swap_array(o_d_, pos1, pos2)
+    swap_array(o_i_, pos1, pos2)
+    swap_array(o_l_, pos1, pos2)
+    swap_array(o_r_, pos1, pos2)
+    swap_array(o_x_, pos1, pos2)
+    swap_array(o_y_, pos1, pos2)
+    swap_array(o_z_, pos1, pos2)
+}
+
+define void quicksort_o(left, right) {
+    auto pivot_index
+
+    if (left < right) {
+        pivot_index = partition_o(left, right)
+        quicksort_o(left, pivot_index - 1)
+        quicksort_o(pivot_index + 1, right)
+    }
+}
+
+define partition_o(left, right) {
+    auto i, j, pivot
+
+    pivot = o_d_[right]
+    i = left - 1
+    for (j = left; j < right; j++) {
+        if (o_d_[j] >= pivot) {
+            i += 1
+            swap_o(i, j)
+        }
+    }
+    swap_o(i + 1, right)
+    return i + 1
+}
+
+define void sort_o() {
+    quicksort_o(0, length(o_) - 1)
+}
+
+define void tick() {
+    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask
+
+    if (num_monsters_ - num_killed_ < 2) {
+        start()
+        return
+    }
+
+    /* TODO */
+
+    if (moved_) {
+        moved_ = 0
+        ray_cast()
+
+        cz = 0
+        tx = cos(player_rotation_)
+        ty = sin(player_rotation_)
+
+        for (i = 0; i < length(o_); i++) if (o_[i]) {
+            x = o_x_[i] - player_x_
+            y = o_y_[i] - player_y_
+
+            scale = 10
+            o_d_[i] = sqrt(x * x + y * y) /* distance */
+            o_a_[i] = acos((tx * x + ty * y)/o_d_[i])
+            if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
+
+            scale = 0
+        }
+
+        sort_o()
+
+        for (i = 0; i < length(o_); i++) if (o_[i]) {
+            scale = 20; ht = 64 / o_d_[i] * dist_to_proj_plane_; scale = 0
+            k = player_eye_level_ - ht / 2
+            l = player_eye_level_ + ht / 2
+
+            /* if i is zero then it is a monster, otherwise it is health */
+            if (o_i_[i]) {
+                pat = sp_enemy
+                pat_mask = sp_enemymask
+            } else {
+                pat = sp_health
+                pat_mask = sp_healthmask
+            }
+
+            o_l_[i] = w_ / 2 + o_a_[i] / r_ - ht / 2
+            o_r_[i] = o_l_[i] + ht
+
+            if (o_z_[i]) { /* determines if the object is dead */
+                if (o_i_[i]) { /* if this is a monster */
+                    pat = sp_dead /* set it to a dead monster sprite */
+                    pat_mask = sp_deadmask
+                } else {
+                    continue
+                }
+            }
+
+            if (o_i_[i] && !player_dead_ && o_c_[i] == 1 && !o_z_[i] && irand(100) < 5) {
+                /* player hit */
+                player_health_ -= irand(8)
+                cz = 2
+                if (player_health_ < 0) {
+                    player_dead_ = 1 /* player is dead */
+                    player_eye_level_ = h_ / 8 /* set the camera Y to 64/8 (fall down) */
+                }
+            }
+
+            if (o_d_[i] > 64 && draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
+                o_c_[i] = 1 /* 1 indicates the monster is visible */
+            } else {
+                o_c_[i] += 1 /* otherwise count frames monster not visible to player */
+            }
+        }
+
+        draw_number(player_points_, 2, h_ + 1, 1)
+        draw_number(num_monsters_ - num_killed_ - 1, 26, h_ + 1, 1)
+        if (!player_dead_) {
+            . = draw_sprite(sp_gun, sp_gunmask, h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 1)
+        }
+
+        for (i = 0; i < player_health_; i++) {
+            img__setpixel(canvas[], w_ - 2 - i, h_ + 3, black_)
+        }
+
+        show_screen(cz)
+    }
+}
+
+clear_terminal()
+
+tick()
+tick()
