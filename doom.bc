@@ -1,7 +1,7 @@
 #!/bin/zsh
 x=/*
 ORIG=`stty -g`
-trap "stty \"$ORIG\"" TERM EXIT
+trap "stty '$ORIG'" TERM EXIT
 stty -echo
 
 while true; do
@@ -232,6 +232,7 @@ define void img__filled_rectangle(*img[], x1, y1, x2, y2, color) {
 /* Draw bitmap */
 define void img__number_bitmap(*img[], x, y, number, w, h, invert) {
     auto ix, iy, pixel
+    scale = 0
 
     for (iy = 0; iy < h; iy++) for (ix = 0; ix < w; ix++) {
         number = divmod(number, 2, pixel[])
@@ -304,7 +305,7 @@ define void draw_number(number, x, y, invert) {
 
     for (i = 0; i<len; i++) {
         m = 10 ^ (len - i - 1)
-        digit = number / m
+        digit = (number / m) @ 0
         number -= digit * m
 
         img__number_bitmap(canvas[], x, y, font[digit], 3, 5, invert)
@@ -426,12 +427,12 @@ define void clear_terminal() {
 }
 
 
-define void show_screen(red) {
+define void show_screen(cz) {
     auto colors
 
     colors[0] = colors[1] = colors[2] = 0
     colors[5] = 255
-    colors[3] = colors[4] = 255 * (red != 2) /* white or red */
+    colors[3] = colors[4] = 255 * (cz != 2) /* white or red */
 
     print "[H"
     img__out_iterm2(canvas[], zoom_, colors[])
@@ -443,10 +444,8 @@ define void start() {
     player_x_ = player_y_ = 128
     num_killed_ = num_monsters_ = player_rotation_ = 0;
 
-    img__new(canvas[], w_, h_ + 8, black_)
-    img__filled_rectangle(canvas[], 0, h_, w_ - 1, h_ + 7, white_)
-    draw_number(game_level_, w_ / 2 - 2, h_ / 2, 0)
-
+    img__new(canvas[], w_, h_ + 8, white_)
+    draw_number(1, w_ / 2 - 2, h_ / 2, 1)
     show_screen(0)
 
     init_map()
@@ -837,7 +836,7 @@ define void tick() {
 
 clear_terminal()
 
-while (1) {
+for(;;) {
     tick()
     key = read()
 
