@@ -93,7 +93,7 @@ define v_pack(*bytes[], bsize, offset, d) {
 }
 
 /* create mono BMP, encode by base64 and print */
-define void img__monobmp(img[]) {
+define void img__monobmp(img[], colors[]) {
     auto b, s, bmp, size, i, x, y, wh, p
 
     scale = 10; wh = ceil(img[0] / 8, 0); scale = 0
@@ -115,8 +115,7 @@ define void img__monobmp(img[]) {
     s = v_pack(bmp[], 16, s, 1)       /* Bit count */
 
     /* Color table */
-    bmp[s++] = bmp[s++] = bmp[s++] = 0;   /* black */
-    bmp[s++] = bmp[s++] = bmp[s++] = 255; /* white */
+    for (i = 0; i < 6; i++) bmp[s++] = colors[i]
 
     for (y = img[1] - 1; y >=0; y--) {
         p = bmp[s] = 0
@@ -142,9 +141,9 @@ define void img__monobmp(img[]) {
 }
 
 /* Output image to iTerm2 terminal */
-define void img__out_iterm2(img[], ratio) {
+define void img__out_iterm2(img[], ratio, colors[]) {
     print "]1337;File=inline=1;width=", img[0] * ratio, "px;height=", img[1] * ratio, "px:"
-    img__monobmp(img[])
+    img__monobmp(img[], colors[])
     "" 
 }
 
@@ -253,7 +252,6 @@ c_90_ = c_180_ / 2
 c_270_ = c_180 * 3 / 2
 
 mscale = 0
-
 
 sp_wall       = 115790325841308887754689319541375788545262201015676595078955512853657393562048
 sp_5k         = 115791758266903294916915719918405839821729688100733916992900690226762151100415
@@ -411,8 +409,14 @@ define void clear_terminal() {
 
 
 define void show_screen(red) {
+    auto colors
+
+    colors[0] = colors[1] = colors[2] = 0
+    colors[5] = 255
+    colors[3] = colors[4] = 255 * (red != 2) /* white or red */
+
     print "[H"
-    img__out_iterm2(canvas[], zoom_)
+    img__out_iterm2(canvas[], zoom_, colors[])
     print "[H"
 }
 
