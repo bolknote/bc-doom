@@ -299,7 +299,7 @@ define is_not_valid_location(x,y) {
         return 1
     }
 
-    return map_[x + map_size_ * y]
+    return map_[x @ 0 + map_size_ * y @ 0]
 }
 
 
@@ -371,6 +371,13 @@ define draw_sprite(sprite, sprite_mask, sx, sy, dx, dy, check, invert) {
     if (dy >= h_) dy = h_ - 1
 
     for (x = sx; x < dx; x++) {
+        /* if $f is zero then we draw as long as it is on the screen
+           otherwise check zBuffer which holds scanline information
+           for visibility, if something already occupies the at
+           a closer depth then we know that whatever we were
+           attempting to draw
+           is hidden so we do not draw it */
+
         if (x >= 0 && k <= w_ && !(check && (check > z_[x]))) {
             px = band(16 * (x - sx) / width, 15)
 
@@ -382,7 +389,7 @@ define draw_sprite(sprite, sprite_mask, sx, sy, dx, dy, check, invert) {
 
                 if (msk) {
                     img__setpixel(canvas[], x, y, bxor(clr, invert))
-                    changed = 1
+                    canvas_changed = 1
                 }
             }
         }
@@ -472,7 +479,8 @@ define void ray_cast() {
 
             q  = d_a  /* store the final location where the ray hits a wall tile */
             r  = d_b
-            a4 = abs((player_x_ - d_a) / c)
+            scale = 20; a4 = abs((player_x_ - d_a) / c); scale = 0
+
             uh = d_a % 64;   /* the pattern repeats every 64 pixels. */
 
             if (s > 0) {
@@ -534,6 +542,7 @@ define void ray_cast() {
 
         scale = 20
         f *= cos(c2)
+
         z_[v] = f /* z-buffer, f is the depth of the scanline */
 
         ht = (64 / f * dist_to_proj_plane_) @ 0 /* height of the scanline */
@@ -594,7 +603,7 @@ define void ray_cast() {
 
             res = !(b2 ||   /* is the color 1 or 0? */ \
                 (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */ \
-                (dd >= 64 && v) || /* if our change in distance is greater than 64 and $v is non 0 */ \
+                (dd >= 64 && v) || /* if our change in distance is greater than 64 and v is non 0 */ \
                 (f >= 64*3 && f < 64*4 && v % 4 == y % 4) || /* skip pixels based on distance from player */ \
                 (f >= 64*4 && f < 64*6 && v % 3 == y % 3) || /* this is how the "lighting" is done */ \
                 (f >= 64*6 && v % 2 == y % 2))
@@ -611,15 +620,18 @@ define void ray_cast() {
 }
 
 define void swap_o(pos1, pos2) {
-    swap_array(o_a_[], pos1, pos2)
-    swap_array(o_c_[], pos1, pos2)
-    swap_array(o_d_[], pos1, pos2)
-    swap_array(o_i_[], pos1, pos2)
-    swap_array(o_l_[], pos1, pos2)
-    swap_array(o_r_[], pos1, pos2)
-    swap_array(o_x_[], pos1, pos2)
-    swap_array(o_y_[], pos1, pos2)
-    swap_array(o_z_[], pos1, pos2)
+    swap_array(o_a_[],  pos1, pos2)
+    swap_array(o_c_[],  pos1, pos2)
+    swap_array(o_d_[],  pos1, pos2)
+    swap_array(o_dx_[], pos1, pos2)
+    swap_array(o_dy_[], pos1, pos2)
+    swap_array(o_i_[],  pos1, pos2)
+    swap_array(o_l_[],  pos1, pos2)
+    swap_array(o_r_[],  pos1, pos2)
+    swap_array(o_x_[],  pos1, pos2)
+    swap_array(o_y_[],  pos1, pos2)
+    swap_array(o_z_[],  pos1, pos2)
+    swap_array(o_[],    pos1, pos2)
 }
 
 define void quicksort_o(left, right) {
@@ -652,7 +664,7 @@ define void sort_o() {
 }
 
 define void tick() {
-    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd
+    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd, z
 
     if (num_monsters_ - num_killed_ < 2) {
         start()
@@ -710,16 +722,19 @@ define void tick() {
         ray_cast()
 
         cz = 0
+        scale = 20
         tx = cos(player_rotation_)
         ty = sin(player_rotation_)
+        scale = 0
 
         for (i = 0; i < length(o_[]); i++) if (o_[i]) {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
+            z = sqrt(tx * tx + ty * ty)
 
             scale = 20
             o_d_[i] = sqrt(x * x + y * y) /* distance */
-            o_a_[i] = acos((tx * x + ty * y)/o_d_[i])
+            o_a_[i] = acos((tx * x + ty * y) / o_d_[i] * z)
             if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
 
             scale = 0
@@ -788,5 +803,7 @@ define void tick() {
 
 clear_terminal()
 
-tick()
-tick()
+while (1) {
+    tick()
+    u_ = 12
+}
