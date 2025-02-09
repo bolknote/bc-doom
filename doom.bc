@@ -403,7 +403,7 @@ define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
            is hidden so we do not draw it */
 
         if (x >= 0 && x < w_) {
-            if (!(check && check > z_[x])) {
+            if (!check || check <= z_[x]) {
                 px = band(16 * (x - sx) / width, 15)
 
                 for (y = sy; y < dy; y++) {
@@ -802,10 +802,8 @@ define void tick() {
                 }
             }
 
-            if (o_d_[i] > 64) {
-                if (draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
-                    o_c_[i] = 1 /* 1 indicates the monster is visible */
-                }
+            if (o_d_[i] > 64 && draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
+                o_c_[i] = 1 /* 1 indicates the monster is visible */
             } else {
                 o_c_[i] += 1 /* otherwise count frames monster not visible to player */
             }
