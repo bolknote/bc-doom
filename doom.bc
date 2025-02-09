@@ -4,16 +4,18 @@ ORIG=`stty -g`
 trap "stty '$ORIG'" TERM EXIT
 stty -echo
 
-while true; do
+while {}; do
+    while {} {read -rstk1 || break}
     v=0
-    read -r -k1 -t0.5 v
+    read -rs -k1 -t0.5 v
+
     case "$v" in
-        " ") echo 32;;
-        l)   echo 108;;
-        j)   echo 106;;
-        k)   echo 107;;
-        m)   echo 109;;
-        *)   echo 0;;
+        " ")  echo 32;;
+        [lL]) echo 108;;
+        [jJ]) echo 106;;
+        [kK]) echo 107;;
+        [mM]) echo 109;;
+        *)    echo 0;;
     esac
 done | bc -Ll -f "$0"
 exit; */1
