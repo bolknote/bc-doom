@@ -759,7 +759,7 @@ define void tick() {
 
             o_d_[i] = sqrt(x * x + y * y) /* distance */
             o_a_[i] = acos((tx * x + ty * y) / (o_d_[i] * z))
-            if (tx * x - ty * y < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
+            if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
         }
 
         sort_o()
