@@ -402,7 +402,7 @@ define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
            attempting to draw
            is hidden so we do not draw it */
 
-        if (x >= 0 && k <= w_) {
+        if (x >= 0 && x <= w_) {
             if (!(check && check > z_[x])) {
                 px = band(16 * (x - sx) / width, 15)
 
