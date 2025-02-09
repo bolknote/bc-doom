@@ -1,5 +1,16 @@
 #!/bin/zsh
 x=/*
+if ! command -v bc &>/dev/null; then
+    echo The game requires BSD bc to run
+    exit 1
+fi
+
+version=$(bc -V | awk '{print $2"\n6.5";exit}' | sort -Vr | head -1)
+if [[ "$version" == "6.5" ]]; then
+    echo Version 6.5.0 or higher of bc is required.
+    exit 1
+fi
+
 ORIG=`stty -g`
 trap "stty '$ORIG'" TERM EXIT
 stty -echo
@@ -8,7 +19,7 @@ v=
 while {}; do
     prev="$v"
     v=
-    read -rs -k1 -t0.4 v
+    read -rs -k1 -t0.1 v
 
     if [[ -n "$v" && "$v" == "$prev" ]]; then
         while {} {read -rstk1 || break}
