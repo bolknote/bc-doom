@@ -161,7 +161,7 @@ define void img__monobmp(img[], colors[]) {
                 bmp[s] = bmp[s] * 2 + img[2 + x + b + y * img[0]]
 
                 if (x + b >= img[0]) {
-                    bmp[s] *= 2 ^ (wh - img[0])
+                    bmp[s] *= bshl(1, wh - img[0])
                 }
             }
             s += 1; p += 1
@@ -286,7 +286,7 @@ c_180_ = pi(15)
 c_90_ = c_180_ / 2
 c_270_ = c_180 * 3 / 2
 
-for (i = 0; i < 16; i++) bits_[i] = 2 ^ i
+for (i = 0; i < 16; i++) bits_[i] = bshl(1, i)
 
 /* Sprites 16×16 */
 sp_wall[15]=sp_wall[11]=sp_wall[7]=sp_wall[3]=65535;sp_wall[10]=sp_wall[8]=14336;sp_wall[9]=4096;sp_wall[13]=sp_wall[2]=sp_wall[0]=448;sp_wall[14]=sp_wall[12]=sp_wall[1]=128;sp_wall[6]=sp_wall[4]=14;sp_wall[5]=4
