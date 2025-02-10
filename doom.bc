@@ -838,7 +838,6 @@ clear_terminal()
 
 for(;;) {
     key = read()
-    tick()
 
     if (key == 108 || key == 100) {
         u_ = -12
@@ -865,4 +864,6 @@ for(;;) {
             moved_ = 1
         }
     }
+
+    tick()
 }
