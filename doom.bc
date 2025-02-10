@@ -15,20 +15,14 @@ ORIG=`stty -g`
 trap "stty '$ORIG'" TERM EXIT
 stty -echo
 
-v=
 while {}; do
-    prev="$v"
     v=
-    read -rs -k1 -t0.1 v
+    read -rs -k1 -t0.4 v
 
-    if [[ -n "$v" && "$v" == "$prev" ]]; then
-        while {} {read -rstk1 || break}
-    else
-        case "${v:l}" in
-            [wasdljkm\ ]) printf "%d\n" "'${v:l}";;
-            *)    echo 0;;
-        esac
-    fi
+    case "${v:l}" in
+        [wasdljkm\ ]) printf "%d\n" "'${v:l}";;
+        *)    echo 0;;
+    esac
 done | bc -g -Ll -f "$0"
 exit; */1
 
@@ -53,6 +47,11 @@ define mod(a, b) {
     scale = 0; return a % b
 }
 
+define void sprite_copy(from[], *to[]) {
+    auto i
+    for (i = 0; i < 16; i++) to[i] = from[i]
+}
+
 define void swap_array(*arr[], pos1, pos2) {
     auto t
     t = arr[pos1]
@@ -71,7 +70,7 @@ define void base64_encode_and_print(bytes[]) {
         for (b = 0; b < 24; b++) {
             index = i + b / 8
 
-            bit = (band(bytes[index] * (2 ^ (b % 8)), 128) && 1)
+            bit = (band(bytes[index] * (bits_[b % 8]), 128) && 1)
             b6 = b6 * 2 + bit
 
             if (mod(b, 6) == 5) {
@@ -287,17 +286,20 @@ c_180_ = pi(15)
 c_90_ = c_180_ / 2
 c_270_ = c_180 * 3 / 2
 
-sp_wall       = 115790325841308887754689319541375788545262201015676595078955512853657393562048
-sp_5k         = 115791758266903294916915719918405839821729688100733916992900690226762151100415
-sp_enemy      = 3604401011418865210367460462141013802062877445938327180701667453088288998384
-sp_health     = 14459987026983748380479840405124610233720605349854119294648131602623749947392
-sp_healthmask = 14460097021716575011009459698040769632580476913144945034209264182221644759040
-sp_enemymask  = 3604423010853823540684956828583937595125500288817684492511162279594624025584
-sp_gun        = 9074664992054167625921853607596205229656202490184025649120289457887141429248
-sp_gunmask    = 14445962027823879042873831860576144858980204774643980420653335896405235990528
-sp_dead       = 1781009664924204950550029277722341159179471590307587660868709914915001860096
-sp_deadmask   = 1781036841271189239956981699968503370596684189380290459034487360571702247424
-sp_fire       = 3040059354238675351661515896043897916288248265572352
+for (i = 0; i < 16; i++) bits_[i] = 2 ^ i
+
+/* Sprites 16×16 */
+sp_wall[15]=sp_wall[11]=sp_wall[7]=sp_wall[3]=65535;sp_wall[10]=sp_wall[8]=14336;sp_wall[9]=4096;sp_wall[13]=sp_wall[2]=sp_wall[0]=448;sp_wall[14]=sp_wall[12]=sp_wall[1]=128;sp_wall[6]=sp_wall[4]=14;sp_wall[5]=4
+sp_5k[15]=sp_5k[0]=65535;sp_5k[14]=sp_5k[1]=53259;sp_5k[3]=49667;sp_5k[12]=49155;sp_5k[13]=sp_5k[2]=40965;sp_5k[5]=37617;sp_5k[9]=37505;sp_5k[8]=35457;sp_5k[6]=35345;sp_5k[7]=34417;sp_5k[4]=33281;sp_5k[10]=32913;sp_5k[11]=32865
+sp_enemy[9]=65508;sp_enemy[10]=32740;sp_enemy[12]=7928;sp_enemy[11]=4740;sp_enemy[4]=sp_enemy[2]=2340;sp_enemy[5]=2244;sp_enemy[3]=2052;sp_enemy[15]=2040;sp_enemy[14]=1224;sp_enemy[8]=1088;sp_enemy[6]=sp_enemy[1]=1032;sp_enemy[7]=sp_enemy[0]=1008;sp_enemy[13]=720
+sp_health[13]=sp_health[12]=12680;sp_health[15]=sp_health[6]=8184;sp_health[11]=sp_health[10]=6120;sp_health[9]=sp_health[8]=4488;sp_health[14]=sp_health[7]=4104;sp_health[5]=sp_health[4]=sp_health[3]=sp_health[2]=sp_health[1]=sp_health[0]=0
+sp_healthmask[15]=sp_healthmask[14]=sp_healthmask[13]=sp_healthmask[12]=sp_healthmask[11]=sp_healthmask[10]=sp_healthmask[9]=sp_healthmask[8]=sp_healthmask[7]=sp_healthmask[6]=8184;sp_healthmask[5]=sp_healthmask[4]=sp_healthmask[3]=sp_healthmask[2]=sp_healthmask[1]=sp_healthmask[0]=0
+sp_enemymask[9]=65532;sp_enemymask[10]=32764;sp_enemymask[8]=18424;sp_enemymask[11]=8188;sp_enemymask[12]=8184;sp_enemymask[5]=sp_enemymask[4]=sp_enemymask[3]=sp_enemymask[2]=4092;sp_enemymask[15]=sp_enemymask[14]=sp_enemymask[6]=sp_enemymask[1]=2040;sp_enemymask[13]=sp_enemymask[7]=sp_enemymask[0]=1008
+sp_gun[15]=sp_gun[14]=5136;sp_gun[13]=sp_gun[12]=2592;sp_gun[10]=1984;sp_gun[11]=1088;sp_gun[9]=sp_gun[8]=sp_gun[7]=sp_gun[6]=sp_gun[5]=sp_gun[4]=sp_gun[3]=sp_gun[2]=sp_gun[1]=sp_gun[0]=0
+sp_gunmask[15]=sp_gunmask[14]=8176;sp_gunmask[13]=sp_gunmask[12]=4064;sp_gunmask[11]=sp_gunmask[10]=1984;sp_gunmask[9]=sp_gunmask[8]=sp_gunmask[7]=sp_gunmask[6]=sp_gunmask[5]=sp_gunmask[4]=sp_gunmask[3]=sp_gunmask[2]=sp_gunmask[1]=sp_gunmask[0]=0
+sp_dead[13]=sp_dead[11]=2340;sp_dead[10]=2244;sp_dead[12]=2052;sp_dead[14]=sp_dead[9]=1032;sp_dead[15]=sp_dead[8]=1008;sp_dead[7]=sp_dead[6]=sp_dead[5]=sp_dead[4]=sp_dead[3]=sp_dead[2]=sp_dead[1]=sp_dead[0]=0
+sp_deadmask[13]=sp_deadmask[12]=sp_deadmask[11]=sp_deadmask[10]=4092;sp_deadmask[14]=sp_deadmask[9]=2040;sp_deadmask[15]=sp_deadmask[8]=1008;sp_deadmask[7]=sp_deadmask[6]=sp_deadmask[5]=sp_deadmask[4]=sp_deadmask[3]=sp_deadmask[2]=sp_deadmask[1]=sp_deadmask[0]=0
+sp_fire[8]=9544;sp_fire[9]=6096;sp_fire[7]=2336;sp_fire[10]=2080;sp_fire[6]=256;sp_fire[15]=sp_fire[14]=sp_fire[13]=sp_fire[12]=sp_fire[11]=sp_fire[5]=sp_fire[4]=sp_fire[3]=sp_fire[2]=sp_fire[1]=sp_fire[0]=0
 
 font[0] = 31599 /* 3×5 */
 font[1] = 18740 /* 3×5 */
@@ -395,7 +397,7 @@ define void init_objects() {
     }
 }
 
-define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
+define draw_sprite(sprite[], sprite_mask[], sy, sx, dy, dx, check, invert) {
     auto height, width, canvas_changed, x, y, px, py, clr, msk
 
     height = abs(dy - sy)
@@ -420,8 +422,8 @@ define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
                 for (y = sy; y < dy; y++) {
                     py = (16 * (y - sy) / height) @ 0
 
-                    clr = (band(sprite / (2 ^ (16 * py)), 2 ^ px) && 1)
-                    msk = (band(sprite_mask / (2 ^ (16 * py)), 2 ^ px) && 1)
+                    clr = (band(sprite[py], bits_[px]) && 1)
+                    msk = (band(sprite_mask[py], bits_[px]) && 1)
 
                     if (msk) {
                         img__setpixel(canvas[], x, y, bxor(clr, invert))
@@ -619,9 +621,9 @@ define void ray_cast() {
            wall tile 0 */
 
         if ((x<0 || x>15) && mod(y, 2)) {
-            pat = sp_5k
+            sprite_copy(sp_5k[], pat[])
         } else {
-            if (game_level_ > 4) pat = sp_enemy; else pat = sp_wall
+            if (game_level_ > 4) sprite_copy(sp_enemy[], pat[]); else sprite_copy(sp_wall[], pat[])
         }
 
         /* start at the top of the scanline and work down */
@@ -635,9 +637,7 @@ define void ray_cast() {
                 b1 = ((y - b3) / ht * 64 / 4) @ 0
             }
 
-            /* we're subtracting from 15 because the tiles
-               are stored upside down */
-            b2 = (band(pat / (2 ^ (16 * b1)), 2 ^ a0) && 1)
+            b2 = (band(pat[b1], bits_[a0]) && 1)
 
             res = (b2 || /* is the color 1 or 0? */ \
                 (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */ \
@@ -784,11 +784,11 @@ define void tick() {
 
             /* if i is zero then it is a monster, otherwise it is health */
             if (o_i_[i]) {
-                pat = sp_enemy
-                pat_mask = sp_enemymask
+                sprite_copy(sp_enemy[], pat[])
+                sprite_copy(sp_enemymask[], pat_mask[])
             } else {
-                pat = sp_health
-                pat_mask = sp_healthmask
+                sprite_copy(sp_health[], pat[])
+                sprite_copy(sp_healthmask[], pat_mask[])
             }
 
             o_l_[i] = (w_ / 2 + o_a_[i] / r_ - ht / 2) @ 0
@@ -796,8 +796,8 @@ define void tick() {
 
             if (o_z_[i]) { /* determines if the object is dead */
                 if (o_i_[i]) { /* if this is a monster */
-                    pat = sp_dead /* set it to a dead monster sprite */
-                    pat_mask = sp_deadmask
+                    sprite_copy(sp_dead[], pat[]) /* set it to a dead monster sprite */
+                    sprite_copy(sp_deadmask[], pat_mask[])
                 } else {
                     continue
                 }
@@ -813,7 +813,7 @@ define void tick() {
                 }
             }
 
-            if (o_d_[i] > 64 && draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
+            if (o_d_[i] > 64 && draw_sprite(pat[], pat_mask[], k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
                 o_c_[i] = 1 /* 1 indicates the monster is visible */
             } else {
                 o_c_[i] += 1 /* otherwise count frames monster not visible to player */
@@ -823,7 +823,7 @@ define void tick() {
         draw_number(player_points_, 2, h_ + 1, 1)
         draw_number(num_monsters_ - num_killed_ - 1, 26, h_ + 1, 1)
         if (!player_dead_) {
-            . = draw_sprite(sp_gun, sp_gunmask, h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 1)
+            . = draw_sprite(sp_gun[], sp_gunmask[], h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 1)
         }
 
         for (i = 0; i < player_health_; i++) {
@@ -852,7 +852,7 @@ for(;;) {
         fwd_ = u_ = 0
     } else if (key == 32) {
         if (!player_dead_) {
-            . = draw_sprite(sp_fire, sp_fire, h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 0)
+            . = draw_sprite(sp_fire[], sp_fire[], h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 0)
             show_screen(0)
 
             for (i = 0; i < length(o_[]); i++) if (o_[i]) {
