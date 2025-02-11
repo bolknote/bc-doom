@@ -290,22 +290,21 @@ for (i = 0; i < 16; i++) bits_[i] = bshl(1, i)
 
 /* Sprites 16×16 */
 sp_[48]=sp_[49]=sp_[50]=sp_[51]=sp_[52]=sp_[53]=sp_[64]=sp_[65]=sp_[66]=sp_[67]=sp_[68]=sp_[69]=sp_[96]=\
-sp_[97]=sp_[98]=sp_[99]=sp_[100]=sp_[101]=sp_[102]=sp_[103]=sp_[104]=sp_[105]=sp_[112]=sp_[113]=sp_[114]=\
-sp_[115]=sp_[116]=sp_[117]=sp_[118]=sp_[119]=sp_[120]=sp_[121]=sp_[128]=sp_[129]=sp_[130]=sp_[131]=\
-sp_[132]=sp_[133]=sp_[134]=sp_[135]=sp_[144]=sp_[145]=sp_[146]=sp_[147]=sp_[148]=sp_[149]=sp_[150]=\
-sp_[151]=sp_[160]=sp_[161]=sp_[162]=sp_[163]=sp_[164]=sp_[165]=sp_[171]=sp_[172]=sp_[173]=sp_[174]=\
-sp_[175]=0;sp_[5]=4;sp_[4]=sp_[6]=14;sp_[1]=sp_[12]=sp_[14]=128;sp_[166]=256;sp_[0]=sp_[2]=sp_[13]=448
-sp_[45]=720;sp_[32]=sp_[39]=sp_[80]=sp_[87]=sp_[93]=sp_[136]=sp_[143]=sp_[152]=sp_[159]=1008;sp_[33]=\
-sp_[38]=sp_[137]=sp_[142]=1032;sp_[40]=sp_[107]=1088;sp_[46]=1224;sp_[106]=sp_[122]=sp_[123]=1984
-sp_[47]=sp_[81]=sp_[86]=sp_[94]=sp_[95]=sp_[153]=sp_[158]=2040;sp_[35]=sp_[140]=2052;sp_[170]=2080
-sp_[37]=sp_[138]=2244;sp_[167]=2336;sp_[34]=sp_[36]=sp_[139]=sp_[141]=2340;sp_[108]=sp_[109]=2592
-sp_[124]=sp_[125]=4064;sp_[82]=sp_[83]=sp_[84]=sp_[85]=sp_[154]=sp_[155]=sp_[156]=sp_[157]=4092;sp_[9]=4096
-sp_[55]=sp_[62]=4104;sp_[56]=sp_[57]=4488;sp_[43]=4740;sp_[110]=sp_[111]=5136;sp_[169]=6096;sp_[58]=sp_[59]=6120
-sp_[44]=7928;sp_[126]=sp_[127]=8176;sp_[54]=sp_[63]=sp_[70]=sp_[71]=sp_[72]=sp_[73]=sp_[74]=sp_[75]=\
-sp_[76]=sp_[77]=sp_[78]=sp_[79]=sp_[92]=8184;sp_[91]=8188;sp_[168]=9544;sp_[60]=sp_[61]=12680;sp_[8]=sp_[10]=14336
-sp_[88]=18424;sp_[42]=32740;sp_[90]=32764;sp_[27]=32865;sp_[26]=32913;sp_[20]=33281;sp_[23]=34417;sp_[22]=35345
-sp_[24]=35457;sp_[25]=37505;sp_[21]=37617;sp_[18]=sp_[29]=40965;sp_[28]=49155;sp_[19]=49667;sp_[17]=sp_[30]=53259
-sp_[41]=65508;sp_[89]=65532;sp_[3]=sp_[7]=sp_[11]=sp_[15]=sp_[16]=sp_[31]=65535
+sp_[97]=sp_[98]=sp_[99]=sp_[7U]=sp_[7V]=sp_[7W]=sp_[7X]=sp_[7Y]=sp_[7Z]=sp_[8W]=sp_[8X]=sp_[8Y]=sp_[8Z]=\
+sp_[9Q]=sp_[9R]=sp_[9S]=sp_[9T]=sp_[9U]=sp_[9V]=sp_[AS]=sp_[AT]=sp_[AU]=sp_[AV]=sp_[AW]=sp_[AX]=sp_[AY]=\
+sp_[AZ]=sp_[BY]=sp_[BZ]=sp_[CQ]=sp_[CR]=sp_[CS]=sp_[CT]=sp_[CU]=sp_[CV]=sp_[DU]=sp_[DV]=sp_[DW]=sp_[DX]=\
+sp_[DY]=sp_[DZ]=sp_[EV]=sp_[EW]=sp_[EX]=sp_[EY]=sp_[EZ]=0;sp_[5]=4;sp_[4]=sp_[6]=E;sp_[1]=sp_[C]=sp_[E]=\
+AS;sp_[EQ]=NQ;sp_[0]=sp_[2]=sp_[D]=448;sp_[45]=720;sp_[W]=sp_[39]=sp_[80]=sp_[87]=sp_[93]=sp_[BQ]=sp_[BX]=\
+sp_[CW]=sp_[DT]=7SS;sp_[X]=sp_[38]=sp_[BR]=sp_[BW]=7UW;sp_[40]=sp_[8R]=8QS;sp_[46]=9TY;sp_[8Q]=sp_[9W]=\
+sp_[9X]=GZY;sp_[47]=sp_[81]=sp_[86]=sp_[94]=sp_[95]=sp_[CX]=sp_[DS]=HVU;sp_[Z]=sp_[BU]=HWW;sp_[EU]=HZU
+sp_[37]=sp_[BS]=JVY;sp_[ER]=KVQ;sp_[Y]=sp_[36]=sp_[BT]=sp_[BV]=KVU;sp_[8S]=sp_[8T]=NQW;sp_[9Y]=sp_[9Z]=4064
+sp_[82]=sp_[83]=sp_[84]=sp_[85]=sp_[CY]=sp_[CZ]=sp_[DQ]=sp_[DR]=4092;sp_[9]=4096;sp_[55]=sp_[62]=4104
+sp_[56]=sp_[57]=4488;sp_[43]=4740;sp_[8U]=sp_[8V]=5136;sp_[ET]=6096;sp_[58]=sp_[59]=6120;sp_[44]=7928
+sp_[AQ]=sp_[AR]=8176;sp_[54]=sp_[63]=sp_[70]=sp_[71]=sp_[72]=sp_[73]=sp_[74]=sp_[75]=sp_[76]=sp_[77]=sp_[78]=\
+sp_[79]=sp_[92]=8184;sp_[91]=8188;sp_[ES]=9544;sp_[60]=sp_[61]=9XZU;sp_[8]=sp_[A]=BUVQ;sp_[88]=FVTY
+sp_[42]=TYVU;sp_[90]=TYXY;sp_[R]=TZXZ;sp_[Q]=UQSX;sp_[K]=UTZV;sp_[N]=VVTR;sp_[M]=WUVZ;sp_[O]=WVXR
+sp_[P]=YWRZ;sp_[L]=YXTR;sp_[I]=sp_[T]=40965;sp_[S]=49155;sp_[J]=49667;sp_[H]=sp_[U]=53259;sp_[41]=65508
+sp_[89]=65532;sp_[3]=sp_[7]=sp_[B]=sp_[F]=sp_[G]=sp_[V]=65535
 
 /* Sprites offset */
 sp_wall = 0
@@ -506,14 +505,14 @@ define void start() {
 }
 
 define void ray_cast() {
-    auto c2, a, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
+    auto c2, angle, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
     r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res
 
     img__new(canvas[], w_, h_ + 8, black_)
     img__filled_rectangle(canvas[], 0, h_, w_ - 1, h_ + 7, white_)
 
     c2 = -f_ /* f_ is the view angle, the larger f_ is the more we cram into the view area */
-    a = player_rotation_ + c2
+    angle = player_rotation_ + c2
     a6 = -1
     uh = uv = 0
     a5 = inf_
@@ -525,12 +524,12 @@ define void ray_cast() {
         c1 = f
         lht = ht
 
-        c = cos(a)
-        s = sin(a)
+        c = cos(angle)
+        s = sin(angle)
         t = s / c
 
-        /* if a is 0 or 180 then we get a divide by zero error so we ignore the ray */
-        if (!a || a == c_180_) {
+        /* if angle is 0 or 180 then we get a divide by zero error so we ignore the ray */
+        if (!angle || angle == c_180_) {
             a4 = inf_
         } else {
             if (s > 0) {
@@ -564,7 +563,7 @@ define void ray_cast() {
         }
 
         /* if we are at 90 or 270 degrees our ray has infinite problems */
-        if (a == c_90_ || a == c_270_) {
+        if (angle == c_90_ || angle == c_270_) {
             a5 = inf_
         } else {
             if (c > 0) {
@@ -628,7 +627,7 @@ define void ray_cast() {
         /* a0 is the x pixel position in the texture
            u will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
 
-        a0 = (u / 4) @ 0
+        a0 = bshr(u, 2)
 
         if (dd > 64 && lht > ht) {  /* Lht is the previous scanline height */
             ht = lht
@@ -665,9 +664,9 @@ define void ray_cast() {
              y position. >>2 divides by 4.  64/4==16 */
 
             if (y - b3 < 0) {
-                b1 = (ceil((y - b3) / ht * 64, 0) / 4) @ 0
+                b1 = bshr(ceil((y - b3) / ht * 64, 0), 2)
             } else {
-                b1 = ((y - b3) / ht * 64 / 4) @ 0
+                b1 = bshr((y - b3) / ht * 64, 2)
             }
 
             b2 = (band(sp_[pat + b1], bits_[a0]) && 1)
@@ -685,7 +684,7 @@ define void ray_cast() {
             }
         }
 
-        a  += r_  /* increment the ray angle */
+        angle  += r_  /* increment the ray angle */
         c2 += r_
     }
 }
