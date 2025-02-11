@@ -286,6 +286,9 @@ c_180_ = pi(15)
 c_90_ = c_180_ / 2
 c_270_ = c_180 * 3 / 2
 
+sbar_changed_ = 1 /* we need to rerender status bar */
+sbar_h_ = 8
+
 for (i = 0; i < 16; i++) bits_[i] = bshl(1, i)
 
 /* Sprites 16×16 */
@@ -395,6 +398,8 @@ define void init_objects() {
             i -= 1
         }
     }
+
+    sbar_changed_ = 1
 }
 
 define draw_sprite(sprite[], sprite_mask[], sy, sx, dy, dx, check, invert) {
@@ -454,18 +459,28 @@ define void show_screen(cz) {
         colors[3] = colors[4] = 255 * (cz != 2) /* white or red */
     }
 
+    if (!sbar_changed_) {
+        canvas[1] -= sbar_h_
+    }
+
     print "[H"
     img__out_iterm2(canvas[], zoom_, colors[])
     print "[H"
+
+    if (!sbar_changed_) {
+        canvas[1] += sbar_h_
+        sbar_changed_ = 0
+    }
 }
 
 define void start() {
     game_level_ += 1
+    sbar_changed_ = 1
     player_x_ = player_y_ = 128
     num_killed_ = num_monsters_ = player_rotation_ = 0;
 
-    img__new(canvas[], w_, h_ + 8, white_)
-    draw_number(1, w_ / 2 - 2, h_ / 2, 1)
+    img__new(canvas[], w_, h_ + sbar_h_, white_)
+    draw_number(game_level_, w_ / 2 - 2, h_ / 2, 1)
     show_screen(0)
 
     init_map()
@@ -732,9 +747,8 @@ define void tick() {
             if (!o_i_[i] && abs(o_x_[i] - player_x_) < 64 && abs(o_y_[i] - player_y_) < 64) {
                 /* player ran into a health.  Make it go away and reward the player */
                 /* set cz to 1 so that we do not display the flash of red */
-                o_z_[i] = 1
                 player_health_ += (64 - player_health_) / 4
-                cz = 1
+                o_z_[i] =sbar_changed_ = cz = 1
             }
         }
     }
@@ -859,6 +873,7 @@ for(;;) {
                     o_z_[i] = 1
                     num_killed_ +=1    /* numKilled is the kill count */
                     player_points_ += 10 * (game_level_ + (o_d_[i] / 64) @ 0)
+                    sbar_changed_ = 1
                 }
             }
             moved_ = 1
