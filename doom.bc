@@ -396,7 +396,7 @@ define void init_objects() {
         if (!is_not_valid_location(x, y)) {
             o_x_[o_cnt] = x
             o_y_[o_cnt] = y
-            o_i_[o_cnt] = type
+            o_type_[o_cnt] = type
             k = 1 - 2 * brand() /* 1 or -1 */
 
             if (type) {
@@ -407,7 +407,7 @@ define void init_objects() {
                 o_dx_[o_cnt] = o_dy_[o_cnt] = 0
             }
 
-            o_z_[o_cnt] = o_c_[o_cnt] = 0
+            o_dead_[o_cnt] = o_vis_[o_cnt] = 0
 
             o_[o_cnt++] = 1 /* object exists */
             i -= 1
@@ -690,17 +690,17 @@ define void ray_cast() {
 }
 
 define void swap_o(pos1, pos2) {
-    swap_array(o_a_[],  pos1, pos2)
-    swap_array(o_c_[],  pos1, pos2)
-    swap_array(o_d_[],  pos1, pos2)
-    swap_array(o_dx_[], pos1, pos2)
-    swap_array(o_dy_[], pos1, pos2)
-    swap_array(o_i_[],  pos1, pos2)
-    swap_array(o_l_[],  pos1, pos2)
-    swap_array(o_r_[],  pos1, pos2)
-    swap_array(o_x_[],  pos1, pos2)
-    swap_array(o_y_[],  pos1, pos2)
-    swap_array(o_z_[],  pos1, pos2)
+    swap_array(o_angl_[], pos1, pos2)
+    swap_array(o_vis_[],  pos1, pos2)
+    swap_array(o_dist_[], pos1, pos2)
+    swap_array(o_dx_[],   pos1, pos2)
+    swap_array(o_dy_[],   pos1, pos2)
+    swap_array(o_type_[], pos1, pos2)
+    swap_array(o_lx_[],   pos1, pos2)
+    swap_array(o_rx_[],   pos1, pos2)
+    swap_array(o_x_[],    pos1, pos2)
+    swap_array(o_y_[],    pos1, pos2)
+    swap_array(o_dead_[], pos1, pos2)
 }
 
 define void quicksort_o(left, right) {
@@ -716,10 +716,10 @@ define void quicksort_o(left, right) {
 define partition_o(left, right) {
     auto i, j, pivot
 
-    pivot = o_d_[right]
+    pivot = o_dist_[right]
     i = left - 1
     for (j = left; j < right; j++) {
-        if (o_d_[j] >= pivot) {
+        if (o_dist_[j] >= pivot) {
             i += 1
             swap_o(i, j)
         }
@@ -749,8 +749,8 @@ define void tick() {
     }
 
     for (i = 0; i < length(o_[]); i++) if (o_[i]) {
-        if (!o_z_[i]) {
-            if (o_c_[i] < 3) {
+        if (!o_dead_[i]) {
+            if (o_vis_[i] < 3) {
                 /* if the object is not out of view of the player for 3 frames */
                 /* then move the monster otherwise it can stay hiding */
 
@@ -766,11 +766,11 @@ define void tick() {
                 moved_ = 1
             }
 
-            if (!o_i_[i] && abs(o_x_[i] - player_x_) < 64 && abs(o_y_[i] - player_y_) < 64) {
+            if (!o_type_[i] && abs(o_x_[i] - player_x_) < 64 && abs(o_y_[i] - player_y_) < 64) {
                 /* player ran into a health.  Make it go away and reward the player */
                 /* set cz to 1 so that we do not display the flash of red */
                 player_health_ += (64 - player_health_) / 4
-                o_z_[i] =sbar_changed_ = cz = 1
+                o_dead_[i] = sbar_changed_ = cz = 1
             }
         }
     }
@@ -804,22 +804,22 @@ define void tick() {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
 
-            o_d_[i] = sqrt(x * x + y * y) /* distance */
-            o_a_[i] = acos((tx * x + ty * y) / (o_d_[i] * z))
-            if (tx * y - ty * x < 0) o_a_[i] = -o_a_[i] /* error in wolf5k ? */
+            o_dist_[i] = sqrt(x * x + y * y) /* distance */
+            o_angl_[i] = acos((tx * x + ty * y) / (o_dist_[i] * z))
+            if (tx * y - ty * x < 0) o_angl_[i] = -o_angl_[i] /* error in wolf5k ? */
         }
 
         sort_o()
 
         for (i = 0; i < length(o_[]); i++) if (o_[i]) {
-            ht = (64 / o_d_[i] * dist_to_proj_plane_) @ 0
+            ht = (64 / o_dist_[i] * dist_to_proj_plane_) @ 0
             k = (player_eye_level_ - ht / 2) @ 0
             l = (player_eye_level_ + ht / 2) @ 0
 
             if (k < 0) k = 0
 
             /* if i is zero then it is a monster, otherwise it is health */
-            if (o_i_[i]) {
+            if (o_type_[i]) {
                 pat = sp_enemy
                 pat_mask = sp_enemymask
             } else {
@@ -827,11 +827,11 @@ define void tick() {
                 pat_mask = sp_healthmask
             }
 
-            o_l_[i] = (w_ / 2 + o_a_[i] / r_ - ht / 2) @ 0
-            o_r_[i] = o_l_[i] + ht
+            o_lx_[i] = (w_ / 2 + o_angl_[i] / r_ - ht / 2) @ 0
+            o_rx_[i] = o_lx_[i] + ht
 
-            if (o_z_[i]) { /* determines if the object is dead */
-                if (o_i_[i]) { /* if this is a monster */
+            if (o_dead_[i]) { /* determines if the object is dead */
+                if (o_type_[i]) { /* if this is a monster */
                     pat = sp_dead /* set it to a dead monster sprite */
                     pat_mask = sp_deadmask
                 } else {
@@ -839,7 +839,7 @@ define void tick() {
                 }
             }
 
-            if (o_i_[i] && !player_dead_ && o_c_[i] == 1 && !o_z_[i] && frand(2) < .05) {
+            if (o_type_[i] && !player_dead_ && o_vis_[i] == 1 && !o_dead_[i] && frand(2) < .05) {
                 /* player hit */
                 player_health_ -= irand(8)
                 cz = 2
@@ -849,10 +849,10 @@ define void tick() {
                 }
             }
 
-            if (o_d_[i] > 64 && draw_sprite(pat, pat_mask, k, o_l_[i], l, o_r_[i], o_d_[i], 1)) {
-                o_c_[i] = 1 /* 1 indicates the monster is visible */
+            if (o_dist_[i] > 64 && draw_sprite(pat, pat_mask, k, o_lx_[i], l, o_rx_[i], o_dist_[i], 1)) {
+                o_vis_[i] = 1 /* 1 indicates the monster is visible */
             } else {
-                o_c_[i] += 1 /* otherwise count frames monster not visible to player */
+                o_vis_[i] += 1 /* otherwise count frames monster not visible to player */
             }
         }
 
@@ -891,10 +891,10 @@ for(;;) {
             show_screen(0)
 
             for (i = 0; i < length(o_[]); i++) if (o_[i]) {
-                if (o_i_[i] && !o_z_[i] && o_l_[i] < w_ / 2 && o_r_[i] > w_ / 2 && o_c_[i] == 1) {
-                    o_z_[i] = 1
+                if (o_type_[i] && !o_dead_[i] && o_lx_[i] < w_ / 2 && o_rx_[i] > w_ / 2 && o_vis_[i] == 1) {
+                    o_dead_[i] = 1
                     num_killed_ +=1    /* numKilled is the kill count */
-                    player_points_ += 10 * (game_level_ + (o_d_[i] / 64) @ 0)
+                    player_points_ += 10 * (game_level_ + (o_dist_[i] / 64) @ 0)
                     sbar_changed_ = 1
                 }
             }
