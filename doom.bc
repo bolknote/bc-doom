@@ -728,15 +728,12 @@ define partition_o(left, right) {
     return i + 1
 }
 
-define void sort_o() {
-    auto last_i, i
-    for (last_i = i = 0; i < length(o_[]); i++) if (o_[i]) last_i = max(last_i, i)
-
-    quicksort_o(0, last_i)
+define void sort_o(len) {
+    quicksort_o(0, len - 1)
 }
 
 define void tick() {
-    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd, z
+    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd, z, len
 
     if (frame_delay_ > 0) {
         frame_delay_ -= 1
@@ -748,7 +745,9 @@ define void tick() {
         return
     }
 
-    for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+    len = length(o_[])
+
+    for (i = 0; i < len; i++) {
         if (!o_dead_[i]) {
             if (o_vis_[i] < 3) {
                 /* if the object is not out of view of the player for 3 frames */
@@ -770,7 +769,7 @@ define void tick() {
                 /* player ran into a health.  Make it go away and reward the player */
                 /* set cz to 1 so that we do not display the flash of red */
                 player_health_ += (64 - player_health_) / 4
-                o_dead_[i] = sbar_changed_ = cz = 1
+                o_dead_[i] = qsbar_changed_ = cz = 1
             }
         }
     }
@@ -800,7 +799,7 @@ define void tick() {
         ty = sin(player_rotation_)
         z = sqrt(tx * tx + ty * ty)
 
-        for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+        for (i = 0; i < len; i++) {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
 
@@ -809,9 +808,9 @@ define void tick() {
             if (tx * y - ty * x < 0) o_angl_[i] = -o_angl_[i] /* error in wolf5k ? */
         }
 
-        sort_o()
+        sort_o(len)
 
-        for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+        for (i = 0; i < len; i++) {
             ht = (64 / o_dist_[i] * dist_to_proj_plane_) @ 0
             k = (player_eye_level_ - ht / 2) @ 0
             l = (player_eye_level_ + ht / 2) @ 0
@@ -890,7 +889,7 @@ for(;;) {
             . = draw_sprite(sp_fire, sp_fire, h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 0)
             show_screen(0)
 
-            for (i = 0; i < length(o_[]); i++) if (o_[i]) {
+            for (i = 0; i < length(o_[]); i++) {
                 if (o_type_[i] && !o_dead_[i] && o_lx_[i] < w_ / 2 && o_rx_[i] > w_ / 2 && o_vis_[i] == 1) {
                     o_dead_[i] = 1
                     num_killed_ +=1    /* numKilled is the kill count */
