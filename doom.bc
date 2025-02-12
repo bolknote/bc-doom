@@ -769,7 +769,7 @@ define void tick() {
                 /* player ran into a health.  Make it go away and reward the player */
                 /* set cz to 1 so that we do not display the flash of red */
                 player_health_ += (64 - player_health_) / 4
-                o_dead_[i] = qsbar_changed_ = cz = 1
+                o_dead_[i] = sbar_changed_ = cz = 1
             }
         }
     }
