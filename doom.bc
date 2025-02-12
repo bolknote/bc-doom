@@ -340,7 +340,7 @@ define void init_objects() {
             o_x_[o_cnt] = x
             o_y_[o_cnt] = y
             o_type_[o_cnt] = type
-            k = 1 - 2 * brand() /* 1 or -1 */
+            k = srand(1)
 
             if (type) {
                 o_dx_[o_cnt] = k * (irand(64) / 4 * game_level_) @ 0
