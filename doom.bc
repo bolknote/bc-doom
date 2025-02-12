@@ -215,7 +215,7 @@ moved_ = 1
 
 rad_ = pi(15) / 180   /* used to convert angles to radians */
 f_ = 30 * rad_        /* angle of view (larger distorts the "lens") */
-dist_to_proj_plane_ = (64 / tan(f_)) @ 0 /* 110 pixels */
+dist_to_proj_plane_ = (64 / tan(f_)) $ /* 110 pixels */
 r_ = 2 * f_ / 128     /* this is the angle of each ray to cover 128 pixels */
 
 player_eye_level_ = 32
@@ -279,11 +279,11 @@ for (i = 0; i < w_; i++) z_[i] = 0
 define void draw_number(number, x, y, invert) {
     auto len, i, digit, m
 
-    if (number) len = l10(number) @ 0 + 1; else len = 1
+    if (number) len = l10(number) $ + 1; else len = 1
 
     for (i = 0; i<len; i++) {
         m = 10 ^ (len - i - 1)
-        digit = (number / m) @ 0
+        digit = (number / m) $
         number -= digit * m
 
         img__number_bitmap(canvas[], x, y, font[digit], 3, 5, invert)
@@ -299,7 +299,7 @@ define is_not_valid_location(x,y) {
         return 1
     }
 
-    return map_[x @ 0 + map_size_ * y @ 0]
+    return map_[x $ + map_size_ * y $]
 }
 
 
@@ -343,8 +343,8 @@ define void init_objects() {
             k = srand(1)
 
             if (type) {
-                o_dx_[o_cnt] = k * (irand(64) / 4 * game_level_) @ 0
-                o_dy_[o_cnt] = k * (irand(64) / 4 * game_level_) @ 0
+                o_dx_[o_cnt] = k * (irand(64) / 4 * game_level_) $
+                o_dy_[o_cnt] = k * (irand(64) / 4 * game_level_) $
                 num_monsters_ += 1
             } else {
                 o_dx_[o_cnt] = o_dy_[o_cnt] = 0
@@ -381,7 +381,7 @@ define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
                 px = band(16 * (x - sx) / width, 15)
 
                 for (y = sy; y < dy; y++) {
-                    py = (16 * (y - sy) / height) @ 0
+                    py = (16 * (y - sy) / height) $
 
                     clr = (band(sp_[sprite + py], bits_[px]) && 1)
                     msk = (band(sp_[sprite_mask + py], bits_[px]) && 1)
@@ -467,13 +467,13 @@ define void ray_cast() {
             a4 = inf_
         } else {
             if (s > 0) {
-                d_b = 64 * ((player_y_ / 64 + 1) @ 0)   /* start at the tile in front of the player */
+                d_b = 64 * ((player_y_ / 64 + 1) $)   /* start at the tile in front of the player */
                 dy = 64                                 /* increment in whole tiles forward */
                 d_a = player_x_ + (d_b - player_y_) / t /* start with an adjustment to the side of the player */
                 dx = 64 / t                             /* increment 64/t to the side (plot chart) */
             } else {
                 /* otherwise we are facing backwards so we go in the opposite direction */
-                d_b = ((player_y_ / 64) @ 0) * 64 - .0001
+                d_b = ((player_y_ / 64) $) * 64 - .0001
                 dy = -64
                 d_a = player_x_ + (d_b - player_y_) / t
                 dx = -64 / t
@@ -501,12 +501,12 @@ define void ray_cast() {
             a5 = inf_
         } else {
             if (c > 0) {
-                d_a = ((player_x_ / 64 + 1) @ 0) * 64 /* start one tile in front of player */
+                d_a = ((player_x_ / 64 + 1) $) * 64 /* start one tile in front of player */
                 dx  = 64
                 d_b = player_y_ + (d_a - player_x_) * t
                 dy  = 64 * t
             } else {
-                d_a = ((player_x_ / 64) @ 0) * 64 - .0001 /* start just behind player */
+                d_a = ((player_x_ / 64) $) * 64 - .0001 /* start just behind player */
                 dx  = -64
                 d_b = player_y_ + (d_a - player_x_) * t   /* at 90 and 270, t goes to infinity so multiplying */
                                                           /* results in an invalid number */
@@ -551,10 +551,10 @@ define void ray_cast() {
 
         z_[v] = f /* z-buffer, f is the depth of the scanline */
 
-        ht = (64 / f * dist_to_proj_plane_) @ 0 /* height of the scanline */
+        ht = (64 / f * dist_to_proj_plane_) $ /* height of the scanline */
         dd = abs(c1 - f) /* change in distance from previous f */
-        k = (player_eye_level_ - ht / 2) @ 0 /* the top of our scanline */
-        l = (player_eye_level_ + ht / 2) @ 0 /* the bottom of the scanline */
+        k = (player_eye_level_ - ht / 2) $ /* the top of our scanline */
+        l = (player_eye_level_ + ht / 2) $ /* the bottom of the scanline */
 
         b3 = k  /* starting position for scanning */
 
@@ -575,8 +575,8 @@ define void ray_cast() {
             l = h_ - 1
         }
 
-        x = (o / 64) @ 0 /* our tile position */
-        y = (p / 64) @ 0
+        x = (o / 64) $ /* our tile position */
+        y = (p / 64) $
 
         /* if we're out of bounds of the map
            and the level is less than 5 then
@@ -714,8 +714,8 @@ define void tick() {
     }
 
     if (fwd_) {
-        x_fwd = (player_x_ + fwd_ * cos(player_rotation_)) @ 0
-        y_fwd = (player_y_ + fwd_ * sin(player_rotation_)) @ 0
+        x_fwd = (player_x_ + fwd_ * cos(player_rotation_)) $
+        y_fwd = (player_y_ + fwd_ * sin(player_rotation_)) $
 
         if (!is_not_valid_location(x_fwd, y_fwd)) {
             player_x_ = x_fwd
@@ -745,9 +745,9 @@ define void tick() {
         sort_o(len)
 
         for (i = 0; i < len; i++) {
-            ht = (64 / o_dist_[i] * dist_to_proj_plane_) @ 0
-            k = (player_eye_level_ - ht / 2) @ 0
-            l = (player_eye_level_ + ht / 2) @ 0
+            ht = (64 / o_dist_[i] * dist_to_proj_plane_) $
+            k = (player_eye_level_ - ht / 2) $
+            l = (player_eye_level_ + ht / 2) $
 
             if (k < 0) k = 0
 
@@ -760,7 +760,7 @@ define void tick() {
                 pat_mask = sp_healthmask
             }
 
-            o_lx_[i] = (w_ / 2 + o_angl_[i] / r_ - ht / 2) @ 0
+            o_lx_[i] = (w_ / 2 + o_angl_[i] / r_ - ht / 2) $
             o_rx_[i] = o_lx_[i] + ht
 
             if (o_dead_[i]) { /* determines if the object is dead */
@@ -827,7 +827,7 @@ for(;;) {
                 if (o_type_[i] && !o_dead_[i] && o_lx_[i] < w_ / 2 && o_rx_[i] > w_ / 2 && o_vis_[i] == 1) {
                     o_dead_[i] = 1
                     num_killed_ +=1    /* numKilled is the kill count */
-                    player_points_ += 10 * (game_level_ + (o_dist_[i] / 64) @ 0)
+                    player_points_ += 10 * (game_level_ + (o_dist_[i] / 64) $)
                 }
             }
             moved_ = 1
