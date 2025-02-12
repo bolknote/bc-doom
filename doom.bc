@@ -27,6 +27,14 @@ while {}; do
 done | bc -g -Ll -f "$0"
 exit; */1
 
+define cnt_digits(x) {
+    auto i
+    scale = 0
+
+    for (i = 0; x /=  10; i++){}
+    return i
+}
+
 define min(a, b) {
     if (a < b) return a
     return b
@@ -300,7 +308,7 @@ for (i = 0; i < w_; i++) z_[i] = 0
 define void draw_number(number, x, y, invert) {
     auto len, i, digit, m
 
-    if (number) len = l10(number) $ + 1; else len = 1
+    len = cnt_digits(number) + 1
 
     for (i = 0; i<len; i++) {
         m = 10 ^ (len - i - 1)
