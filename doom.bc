@@ -124,7 +124,7 @@ define v_pack(*bytes[], bsize, offset, d) {
 
 /* create mono BMP, encode by base64 and print */
 define void img__monobmp(img[], colors[]) {
-    auto b, s, bmp, size, i, x, y, wh, p
+    auto b, s, bmp, size, i, x, y, wh, p, byte
 
     scale = 0
 
@@ -150,17 +150,19 @@ define void img__monobmp(img[], colors[]) {
     for (i = 0; i < 6; i++) bmp[s++] = colors[i]
 
     for (y = img[1] - 1; y >=0; y--) {
-        p = bmp[s] = 0
+        p = 0
 
         for (x = 0; x < img[0]; x += 8) {
+            byte = 0
             for (b = 0; b < 8; b++) {
-                bmp[s] = bmp[s] * 2 + img[2 + x + b + y * img[0]]
+                byte = byte * 2 + img[2 + x + b + y * img[0]]
 
                 if (x + b >= img[0]) {
-                    bmp[s] *= bshl(1, wh - img[0])
+                    byte = bshl(byte, wh - img[0])
                 }
             }
-            s += 1; p += 1
+            bmp[s++] = byte
+            p += 1
         }
 
         /* Row padding */
@@ -282,7 +284,6 @@ c_180_ = pi(15)
 c_90_ = c_180_ / 2
 c_270_ = c_180 * 3 / 2
 
-sbar_changed_ = 1 /* we need to rerender status bar */
 sbar_h_ = 8
 
 frame_delay_ = 0
@@ -414,8 +415,6 @@ define void init_objects() {
             i -= 1
         }
     }
-
-    sbar_changed_ = 1
 }
 
 define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
@@ -475,23 +474,13 @@ define void show_screen(cz) {
         colors[3] = colors[4] = 255 * (cz != 2) /* white or red */
     }
 
-    if (!sbar_changed_) {
-        canvas[1] -= sbar_h_
-    }
-
     print "[H"
     img__out_iterm2(canvas[], zoom_, colors[])
     print "[H"
-
-    if (!sbar_changed_) {
-        canvas[1] += sbar_h_
-        sbar_changed_ = 0
-    }
 }
 
 define void start() {
     game_level_ += 1
-    sbar_changed_ = 1
     player_x_ = player_y_ = 128
     num_killed_ = num_monsters_ = player_rotation_ = 0
 
@@ -770,7 +759,7 @@ define void tick() {
                 /* player ran into a health.  Make it go away and reward the player */
                 /* set cz to 1 so that we do not display the flash of red */
                 player_health_ += (64 - player_health_) / 4
-                o_dead_[i] = sbar_changed_ = cz = 1
+                o_dead_[i] = cz = 1
             }
         }
     }
@@ -895,7 +884,6 @@ for(;;) {
                     o_dead_[i] = 1
                     num_killed_ +=1    /* numKilled is the kill count */
                     player_points_ += 10 * (game_level_ + (o_dist_[i] / 64) @ 0)
-                    sbar_changed_ = 1
                 }
             }
             moved_ = 1
