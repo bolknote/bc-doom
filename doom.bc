@@ -186,65 +186,6 @@ define void img__setpixel(*img[], x, y, color) {
     if (x < img[0] && y < img[1] && x >= 0 && y >= 0) img[2 + x + y * img[0]] = color
 }
 
-/* Get pixel */
-define img__getpixel(*img[], x, y) {
-    if (x < img[0] && y < img[1]) return img[2 + x + y * img[0]]
-
-    return black_
-}
-
-/* Draw line */
-define void img__line(*img[], x1, y1, x2, y2, color) {
-    auto step, dx, sx, dy, sy, e, t, i
-
-    step = 0
-    dx = abs(x2 - x1)
-    if (x2 - x1 > 0) sx = 1; else sx = -1
-    dy = abs(y2 - y1)
-    if (y2 - y1 > 0) sy = 1; else sy = -1
-
-    if (dy > dx) {
-        step = 1
-        t = x1; x1 = y1; y1 = t
-        t = dx; dx = dy; dy = t
-        t = sx; sx = sy; sy = t
-    }
-
-    e = 2 * dy - dx
-
-    for (i = 0; i < dx; i++) {
-        if (step) img__setpixel(img[], y1, x1, color); else img__setpixel(img[], x1, y1, color)
-
-        while (e >= 0) {
-            y1 += sy
-            e -= 2 * dx
-        }
-
-        x1 += sx
-        e += 2 * dy
-    }
-
-    img__setpixel(img[], x2, y2, color)
-}
-
-/* Draw rectangle */
-define void img__rectangle(*img[], x1, y1, x2, y2, color) {
-    img__line(img[], x1, y1, x2, y1, color);
-    img__line(img[], x2, y1, x2, y2, color);
-    img__line(img[], x2, y2, x1, y2, color);
-    img__line(img[], x1, y2, x1, y1, color);
-}
-
-/* Draw filled rectangle */
-define void img__filled_rectangle(*img[], x1, y1, x2, y2, color) {
-    auto hx, lx, x
-
-    hx = min(max(x1, x2), img[0])
-    lx = max(min(x1, x2), 0)
-
-    for (x = lx; x <= hx; x++) img__line(img[], x, y1, x, y2, color)
-}
-
 /* Draw bitmap */
 define void img__number_bitmap(*img[], x, y, number, w, h, invert) {
     auto ix, iy, pixel
@@ -496,10 +437,13 @@ define void start() {
 
 define void ray_cast() {
     auto c2, angle, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
-    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res
+    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res, len
 
-    img__new(canvas[], w_, h_ + 8, black_)
-    img__filled_rectangle(canvas[], 0, h_, w_ - 1, h_ + 7, white_)
+    img__new(canvas[], w_, h_ + sbar_h_, black_)
+
+    /* white status bar */
+    len = length(canvas[])
+    for (i = w_ * h_ + 2; i < len; i++) canvas[i] = white_
 
     c2 = -f_ /* f_ is the view angle, the larger f_ is the more we cram into the view area */
     angle = player_rotation_ + c2
