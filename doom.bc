@@ -45,7 +45,28 @@ define acos(a) {
 }
 
 define mod(a, b) {
-    scale = 0; return a % b
+    scale = 0; return a$ % b$
+}
+
+/* faster than the library function by more than 4 times */
+define s(x) {
+    auto sign, xf, per, xx, y
+
+    x *= 0.63661977236758134308
+    sign = (x < 0)
+
+    if (sign) x = -x
+    xf = x$
+    x -= xf
+
+    if (mod(xf, 2)) x = 1 - x
+
+    per = mod(xf / 2, 2)
+    xx = x * x
+    y = x * (1.5707903005870776 + xx * (-0.6458858977085938 + xx*(0.07941798513358536 - 0.0043223880120647346 * xx)))
+
+    if (sign != per) return -y
+    return y
 }
 
 define void swap_array(*arr[], pos1, pos2) {
