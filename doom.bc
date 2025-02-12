@@ -12,8 +12,9 @@ if [[ "$version" == "6.5" ]]; then
 fi
 
 ORIG=`stty -g`
-trap "stty '$ORIG'" TERM EXIT
+trap 'stty "$ORIG";printf "\033[?25h"' INT TERM EXIT
 stty -echo
+echo -ne "\033[?25l"
 
 while {}; do
     v=
