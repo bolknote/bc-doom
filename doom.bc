@@ -57,6 +57,20 @@ define acos(a) {
     return 2 * a(sqrt((1 - a) / (1 + a)))
 }
 
+define cached_acos(a) {
+    auto arg
+    arg = (a << 3)$
+
+    if (arg > 0) {
+        if (pos_acos_cache_[arg]) return pos_acos_cache_[arg]
+        return pos_acos_cache_[arg] = acos(a)
+    } else {
+        arg = -arg
+        if (neg_acos_cache_[arg]) return neg_acos_cache_[arg]
+        return neg_acos_cache_[arg] = acos(a)
+    }
+}
+
 define mod(a, b) {
     scale = 0; return a$ % b$
 }
@@ -771,7 +785,7 @@ define void tick() {
             y = o_y_[i] - player_y_
 
             o_dist_[i] = cached_sqrt(x * x + y * y) /* distance */
-            o_angl_[i] = acos((tx * x + ty * y) / (o_dist_[i] * z))
+            o_angl_[i] = cached_acos((tx * x + ty * y) / (o_dist_[i] * z))
             if (tx * y - ty * x < 0) o_angl_[i] = -o_angl_[i]
         }
 
