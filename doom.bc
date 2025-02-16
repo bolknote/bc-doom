@@ -20,9 +20,8 @@ while {}; do
     v=
     read -rs -k1 -t0.4 v
 
-    case "${v:l}" in
-        [wasdljkm\ ]) printf "%d\n" "'${v:l}";;
-        *)    echo 0;;
+    case "${v:u}" in
+        [WASDLJKM]) echo ${v:u};; " ") echo 1;; *) echo 0;;
     esac
 done | bc -g -Ll -f "$0"
 exit; */1
@@ -855,17 +854,17 @@ clear_terminal()
 for(;;) {
     key = read()
 
-    if (key == 108 || key == 100) {
+    if (key == L || key == D) {
         u_ = -12
-    } else if (key == 106 || key == 97) {
+    } else if (key == J || key == A) {
         u_ = 12
-    } else if ((key == 107 || key == 119) && !player_dead_) {
+    } else if ((key == K || key == W) && !player_dead_) {
         fwd_ = 64/3;
-    } else if ((key == 109 || key == 115) && !player_dead_) {
+    } else if ((key == M || key == S) && !player_dead_) {
         fwd_ = -64/3;
     } else if (key == 0) {
         fwd_ = u_ = 0
-    } else if (key == 32) {
+    } else if (key == 1) {
         if (!player_dead_) {
             . = draw_sprite(sp_fire, sp_fire, h_ - 32, w_ / 2 - 16, h_, w_ / 2 + 16, 0, 0)
             show_screen(0)
