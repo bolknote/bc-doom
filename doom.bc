@@ -262,7 +262,7 @@ moved_ = 1
 rad_ = pi(15) / 180   /* used to convert angles to radians */
 f_ = 30 * rad_        /* angle of view (larger distorts the "lens") */
 dist_to_proj_plane_ = (64 / tan(f_)) $ /* 110 pixels */
-r_ = 2 * f_ / 128     /* this is the angle of each ray to cover 128 pixels */
+r_ = 2 * f_ / w_     /* this is the angle of each ray to cover 128 pixels */
 
 player_eye_level_ = 32
 inf_ = 1e300
@@ -482,147 +482,149 @@ define void start() {
 }
 
 define void ray_cast() {
-    auto c2, angle, a6, d, lht, c1, u, uh, uv, a5, a4, f, dx, dy, d_b, q,\
-    r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res, len
+    auto angle_offset, ray_angle, wall_side, prev_wall_side, prev_height, prev_dist, tex_coord, tex_u, tex_v,\
+    horiz_dist, vert_dist, wall_dist, step_x, step_y, ray_start_y, vert_hit_x, vert_hit_y, horiz_hit_x, \
+    horiz_hit_y, wall_x, wall_y, wall_height, ray_start_x, col, dist_delta, draw_top, draw_bottom, tex_col, \
+    tex_row, tex_bit, sprite_id, skip_pixel, canvas_size, cos_angle
 
     img__new(canvas[], w_, h_ + sbar_h_, black_)
 
     /* white status bar */
-    len = length(canvas[])
-    for (i = w_ * h_ + 2; i < len; i++) canvas[i] = white_
+    canvas_size = length(canvas[])
+    for (i = w_ * h_ + 2; i < canvas_size; i++) canvas[i] = white_
 
-    c2 = -f_ /* f_ is the view angle, the larger f_ is the more we cram into the view area */
-    angle = player_rotation_ + c2
-    a6 = -1
-    uh = uv = 0
-    a5 = inf_
+    angle_offset = -f_ /* f_ is the view ray_angle, the larger f_ is the more we cram into the view area */
+    ray_angle = player_rotation_ + angle_offset
+    wall_side = -1
+    tex_u = tex_v = 0
+    horiz_dist = inf_
 
-    f = 0
+    wall_dist = 0
 
     /* what scanline we are working on (0-128) */
-    for (v = 0; v < w_; v++) {
-        c1 = f
-        lht = ht
+    for (col = 0; col < w_; col++) {
+        prev_dist = wall_dist
+        prev_height = wall_height
 
-        c = cos(angle)
-        s = sin(angle)
-        t = s / c
+        cos_angle   = cos(ray_angle)
+        horiz_hit_x = sin(ray_angle)
+        horiz_hit_y = horiz_hit_x / cos_angle
 
-        /* if angle is 0 or 180 then we get a divide by zero error so we ignore the ray */
-        if (!angle || angle == c_180_) {
-            a4 = inf_
+        /* if ray_angle is 0 or 180 then we get a divide by zero error so we ignore the ray */
+        if (!ray_angle || ray_angle == c_180_) {
+            vert_dist = inf_
         } else {
-            if (s > 0) {
-                d_b = 64 * ((player_y_ / 64 + 1) $)   /* start at the tile in front of the player */
-                dy = 64                                 /* increment in whole tiles forward */
-                d_a = player_x_ + (d_b - player_y_) / t /* start with an adjustment to the side of the player */
-                dx = 64 / t                             /* increment 64/t to the side (plot chart) */
+            if (horiz_hit_x > 0) {
+                ray_start_y = 64 * ((player_y_ / 64 + 1) $)   /* start at the tile in front of the player */
+                step_y = 64                                   /* increment in whole tiles forward */
+                ray_start_x = player_x_ + (ray_start_y - player_y_) / horiz_hit_y /* start with an adjustment to the side of the player */
+                step_x = 64 / horiz_hit_y                     /* increment 64/horiz_hit_y to the side (plot chart) */
             } else {
                 /* otherwise we are facing backwards so we go in the opposite direction */
-                d_b = ((player_y_ / 64) $) * 64 - .0001
-                dy = -64
-                d_a = player_x_ + (d_b - player_y_) / t
-                dx = -64 / t
+                ray_start_y = ((player_y_ / 64) $) * 64 - .0001
+                step_y = -64
+                ray_start_x = player_x_ + (ray_start_y - player_y_) / horiz_hit_y
+                step_x = -64 / horiz_hit_y
             }
 
             /* while we have not hit a wall tile or edge of the map */
-            while(!is_not_valid_location(d_a, d_b)) {
-                d_a += dx /* keep shooting the ray */
-                d_b += dy
+            while(!is_not_valid_location(ray_start_x, ray_start_y)) {
+                ray_start_x += step_x /* keep shooting the ray */
+                ray_start_y += step_y
             }
 
-            q  = d_a  /* store the final location where the ray hits a wall tile */
-            r  = d_b
-            a4 = abs((player_x_ - d_a) / c)
+            vert_hit_x  = ray_start_x  /* store the final location where the ray hits a wall tile */
+            vert_hit_y  = ray_start_y
+            vert_dist = abs((player_x_ - ray_start_x) / cos_angle)
 
-            uh = mod(d_a, 64)   /* the pattern repeats every 64 pixels. */
+            tex_u = mod(ray_start_x, 64)   /* the pattern repeats every 64 pixels. */
 
-            if (s > 0) {
-                uh = 64 - uh    /* flip the pattern */
+            if (horiz_hit_x > 0) {
+                tex_u = 64 - tex_u    /* flip the pattern */
             }
         }
 
         /* if we are at 90 or 270 degrees our ray has infinite problems */
-        if (angle == c_90_ || angle == c_270_) {
-            a5 = inf_
+        if (ray_angle == c_90_ || ray_angle == c_270_) {
+            horiz_dist = inf_
         } else {
-            if (c > 0) {
-                d_a = ((player_x_ / 64 + 1) $) * 64 /* start one tile in front of player */
-                dx  = 64
-                d_b = player_y_ + (d_a - player_x_) * t
-                dy  = 64 * t
+            if (cos_angle > 0) {
+                ray_start_x = ((player_x_ / 64 + 1) $) * 64 /* start one tile in front of player */
+                step_x  = 64
+                ray_start_y = player_y_ + (ray_start_x - player_x_) * horiz_hit_y
+                step_y  = 64 * horiz_hit_y
             } else {
-                d_a = ((player_x_ / 64) $) * 64 - .0001 /* start just behind player */
-                dx  = -64
-                d_b = player_y_ + (d_a - player_x_) * t   /* at 90 and 270, t goes to infinity so multiplying */
+                ray_start_x = ((player_x_ / 64) $) * 64 - .0001 /* start just behind player */
+                step_x  = -64
+                ray_start_y = player_y_ + (ray_start_x - player_x_) * horiz_hit_y   /* at 90 and 270, horiz_hit_y goes to infinity so multiplying */
                                                           /* results in an invalid number */
-                dy  = -64 * t
+                step_y  = -64 * horiz_hit_y
             }
 
             /* again look for the first wall tile we hit */
-            while (!is_not_valid_location(d_a, d_b)) {
-                d_a += dx
-                d_b += dy
+            while (!is_not_valid_location(ray_start_x, ray_start_y)) {
+                ray_start_x += step_x
+                ray_start_y += step_y
             }
 
-            s = d_a
-            t = d_b
-            a5 = abs((player_x_ - d_a) / c)
+            horiz_hit_x = ray_start_x
+            horiz_hit_y = ray_start_y
+            horiz_dist = abs((player_x_ - ray_start_x) / cos_angle)
 
-            uv = mod(d_b, 64)
-            if (c < 0) {
-                uv = 64 - uv
+            tex_v = mod(ray_start_y, 64)
+            if (cos_angle < 0) {
+                tex_v = 64 - tex_v
             }
         }
 
-        d = a6
+        prev_wall_side = wall_side
         /* we are looking for the smallest distance to travel
            both rays cannot be infinite at once so we pick the one
            that is not infinite */
-        if (a4 < a5) {
-            u  = uh /* texture scanline */
-            f  = a4 /* distance from camera */
-            a6 = 0
-            o  = q  /* map x position */
-            p  = r  /* map y position */
+        if (vert_dist < horiz_dist) {
+            tex_coord  = tex_u      /* texture scanline */
+            wall_dist  = vert_dist  /* distance from camera */
+            wall_side = 0
+            wall_x  = vert_hit_x    /* map x position */
+            wall_y  = vert_hit_y    /* map y position */
         } else {
-            u  = uv /* text scanline */
-            f  = a5 /* distance from camera */
-            a6 = 1
-            o  = s /* map x position */
-            p  = t /* map y position */
+            tex_coord  = tex_v      /* text scanline */
+            wall_dist  = horiz_dist /* distance from camera */
+            wall_side = 1
+            wall_x  = horiz_hit_x   /* map x position */
+            wall_y  = horiz_hit_y   /* map y position */
         }
 
-        f *= cos(c2)
+        wall_dist *= cos(ray_angle - player_rotation_)
 
-        z_[v] = f /* z-buffer, f is the depth of the scanline */
+        z_[col] = wall_dist /* z-buffer, wall_dist is the depth of the scanline */
 
-        ht = (64 / f * dist_to_proj_plane_) $ /* height of the scanline */
-        dd = abs(c1 - f) /* change in distance from previous f */
-        k = (player_eye_level_ - ht / 2) $ /* the top of our scanline */
-        l = (player_eye_level_ + ht / 2) $ /* the bottom of the scanline */
+        wall_height = (64 / wall_dist * dist_to_proj_plane_) $ /* height of the scanline */
+        dist_delta = abs(prev_dist - wall_dist) /* change in distance from previous wall_dist */
+        draw_top = (player_eye_level_ - wall_height / 2) $ /* the top of our scanline */
+        draw_bottom = (player_eye_level_ + wall_height / 2) $ /* the bottom of the scanline */
 
-        b3 = k  /* starting position for scanning */
+        b3 = draw_top  /* starting position for scanning */
 
-        /* a0 is the x pixel position in the texture
-           u will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
+        /* tex_col is the x pixel position in the texture
+           tex_coord will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
 
-        a0 = bshr(u, 2)
+        tex_col = bshr(tex_coord, 2)
 
-        if (dd > 64 && lht > ht) {  /* Lht is the previous scanline height */
-            ht = lht
+        if (dist_delta > 64 && prev_height > wall_height) {  /* prev_height is the previous scanline height */
+            wall_height = prev_height
         }
 
-        if (k < 0) { /* make sure we are not trying to draw above the view area */
-            k = 0
+        if (draw_top < 0) { /* make sure we are not trying to draw above the view area */
+            draw_top = 0
         }
 
-        if (l >= h_) { /* if l is greater than the height of the view area then adjust */
-            l = h_ - 1
+        if (draw_bottom >= h_) { /* if draw_bottom is greater than the height of the view area then adjust */
+            draw_bottom = h_ - 1
         }
 
-        x = (o / 64) $ /* our tile position */
-        y = (p / 64) $
+        x = (wall_x / 64) $ /* our tile position */
+        y = (wall_y / 64) $
 
         /* if we're out of bounds of the map
            and the level is less than 5 then
@@ -633,39 +635,39 @@ define void ray_cast() {
            wall tile 0 */
 
         if ((x<0 || x>15) && mod(y, 2)) {
-            pat = sp_5k
+            sprite_id = sp_5k
         } else {
-            if (game_level_ > 4) pat = sp_enemy; else pat = sp_wall
+            if (game_level_ > 4) sprite_id = sp_enemy; else sprite_id = sp_wall
         }
 
         /* start at the top of the scanline and work down */
-        for (y = k; y < l; y++) {
+        for (y = draw_top; y < draw_bottom; y++) {
             /* the row of pixels is based on the current y
              y position. >>2 divides by 4.  64/4==16 */
 
             if (y - b3 < 0) {
-                b1 = bshr(ceil((y - b3) / ht * 64, 0), 2)
+                tex_row = bshr(ceil((y - b3) / wall_height * 64, 0), 2)
             } else {
-                b1 = bshr((y - b3) / ht * 64, 2)
+                tex_row = bshr((y - b3) / wall_height * 64, 2)
             }
 
-            b2 = (band(sp_[pat + b1], bits_[a0]) && 1)
+            tex_bit = (band(sp_[sprite_id + tex_row], bits_[tex_col]) && 1)
 
-            res = (b2 || /* is the color 1 or 0? */ \
-                (v && d != a6) || /* is v 0 and d not equal to a6 (d is the prior version of a6) */ \
-                (dd >= 64 && v) || /* if our change in distance is greater than 64 and v is non 0 */ \
-                (f >= 64*3 && f < 64*4 && mod(v, 4) == mod(y, 4)) || /* skip pixels based on distance from player */ \
-                (f >= 64*4 && f < 64*6 && mod(v, 3) == mod(y, 3)) || /* this is how the "lighting" is done */ \
-                (f >= 64*6 && mod(v, 2) == mod(y, 2)))
+            skip_pixel = (tex_bit || /* is the color 1 or 0? */ \
+                (col && prev_wall_side != wall_side) || /* is col 0 and prev_wall_side not equal to wall_side (prev_wall_side is the prior version of wall_side) */ \
+                (dist_delta >= 64 && col) || /* if our change in distance is greater than 64 and col is non 0 */ \
+                (wall_dist >= 64*3 && wall_dist < 64*4 && mod(col, 4) == mod(y, 4)) || /* skip pixels based on distance from player */ \
+                (wall_dist >= 64*4 && wall_dist < 64*6 && mod(col, 3) == mod(y, 3)) || /* this is how the "lighting" is done */ \
+                (wall_dist >= 64*6 && mod(col, 2) == mod(y, 2)))
 
-            if (!res) {
+            if (!skip_pixel) {
                 /* if after all of the checks we having something to plot */
-                img__setpixel(canvas[], v, y, white_)
+                img__setpixel(canvas[], col, y, white_)
             }
         }
 
-        angle  += r_  /* increment the ray angle */
-        c2 += r_
+        ray_angle  += r_  /* increment the ray ray_angle */
+        angle_offset += r_
     }
 }
 
