@@ -687,33 +687,21 @@ define void swap_o(pos1, pos2) {
     swap_array(o_dead_[], pos1, pos2)
 }
 
-define void quicksort_o(left, right) {
-    auto pivot_index
+define void sort_o(len) {
+    auto j, i, delta
 
-    if (left < right) {
-        pivot_index = partition_o(left, right)
-        quicksort_o(left, pivot_index - 1)
-        quicksort_o(pivot_index + 1, right)
-    }
-}
-
-define partition_o(left, right) {
-    auto i, j, pivot
-
-    pivot = o_dist_[right]
-    i = left - 1
-    for (j = left; j < right; j++) {
-        if (o_dist_[j] >= pivot) {
-            i += 1
-            swap_o(i, j)
+    for(j = 1; j < len; j++) {
+        for(i = j; i > 0; i--) {
+            delta = abs(o_dist_[i] - o_dist_[i-1])
+            if(delta < 5 && abs(o_angl_[i] - c_90_) < abs(o_angl_[i-1] - c_90_)) {
+                swap_o(i, i-1)
+            } else if(o_dist_[i] > o_dist_[i-1]) {
+                swap_o(i, i-1)
+            } else {
+                break
+            }
         }
     }
-    swap_o(i + 1, right)
-    return i + 1
-}
-
-define void sort_o(len) {
-    quicksort_o(0, len - 1)
 }
 
 define void tick() {
