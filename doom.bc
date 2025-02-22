@@ -485,7 +485,7 @@ define void ray_cast() {
     auto angle_offset, ray_angle, wall_side, prev_wall_side, prev_height, prev_dist, tex_coord, tex_u, tex_v,\
     horiz_dist, vert_dist, wall_dist, step_x, step_y, ray_start_y, vert_hit_x, vert_hit_y, horiz_hit_x, \
     horiz_hit_y, wall_x, wall_y, wall_height, ray_start_x, col, dist_delta, draw_top, draw_bottom, tex_col, \
-    tex_row, tex_bit, sprite_id, skip_pixel, canvas_size, cos_angle
+    tex_row, tex_bit, sprite_id, skip_pixel, canvas_size, cos_angle, x, y, wall_draw_start_y
 
     img__new(canvas[], w_, h_ + sbar_h_, black_)
 
@@ -604,7 +604,7 @@ define void ray_cast() {
         draw_top = (player_eye_level_ - wall_height / 2) $ /* the top of our scanline */
         draw_bottom = (player_eye_level_ + wall_height / 2) $ /* the bottom of the scanline */
 
-        b3 = draw_top  /* starting position for scanning */
+        wall_draw_start_y = draw_top  /* starting position for scanning */
 
         /* tex_col is the x pixel position in the texture
            tex_coord will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
@@ -645,10 +645,10 @@ define void ray_cast() {
             /* the row of pixels is based on the current y
              y position. >>2 divides by 4.  64/4==16 */
 
-            if (y - b3 < 0) {
-                tex_row = bshr(ceil((y - b3) / wall_height * 64, 0), 2)
+            if (y - wall_draw_start_y < 0) {
+                tex_row = bshr(ceil((y - wall_draw_start_y) / wall_height * 64, 0), 2)
             } else {
-                tex_row = bshr((y - b3) / wall_height * 64, 2)
+                tex_row = bshr((y - wall_draw_start_y) / wall_height * 64, 2)
             }
 
             tex_bit = (band(sp_[sprite_id + tex_row], bits_[tex_col]) && 1)
