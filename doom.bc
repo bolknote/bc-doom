@@ -380,6 +380,8 @@ define void init_objects() {
     while (i) {
         x = 64 * (irand(12) + 2)
         y = 64 * (irand(12) + 2)
+        if (x == player_x_ && y == player_y_) continue
+
         type = (mod(i, 8) && 1) /* 0 — health, 1 — monster */
 
         if (!is_not_valid_location(x, y)) {
@@ -850,7 +852,7 @@ define void tick() {
 
         show_screen(flash_type)
     }
-}
+}gg
 
 clear_terminal()
 
