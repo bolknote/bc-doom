@@ -482,7 +482,7 @@ define void start() {
 }
 
 define void ray_cast() {
-    auto c2, angle, a6, d, lht, c1, u, uh, uv, a5, a4, f, d2, dx, dy, d_b, q,\
+    auto c2, angle, a6, d, lht, c1, u, uh, uv, a5, a4, f, dx, dy, d_b, q,\
     r, s, t, o, p, ht, d_a, v, dd, k, l, a0, b1, b2, pat, res, len
 
     img__new(canvas[], w_, h_ + sbar_h_, black_)
