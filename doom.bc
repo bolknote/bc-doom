@@ -715,7 +715,8 @@ define void sort_o(len) {
 }
 
 define void tick() {
-    auto i, cz, tx, ty, x, y, ht, k, l, pat, pat_mask, x_fwd, y_fwd, z, len
+    auto i, flash_type, dir_x, dir_y, x, y, sprite_height, sprite_top, sprite_bottom, sprite_pattern,\
+    sprite_mask, x_fwd, y_fwd, dir_len, len
 
     if (frame_delay_ > 0) {
         frame_delay_ -= 1
@@ -749,9 +750,9 @@ define void tick() {
 
             if (!o_type_[i] && abs(o_x_[i] - player_x_) < 64 && abs(o_y_[i] - player_y_) < 64) {
                 /* player ran into a health.  Make it go away and reward the player */
-                /* set cz to 1 so that we do not display the flash of red */
+                /* set flash_type to 1 so that we do not display the flash of red */
                 player_health_ += (64 - player_health_) / 4
-                o_dead_[i] = cz = 1
+                o_dead_[i] = flash_type = 1
             }
         }
     }
@@ -776,45 +777,45 @@ define void tick() {
         moved_ = 0
         ray_cast()
 
-        cz = 0
-        tx = cos(player_rotation_)
-        ty = sin(player_rotation_)
-        z = cached_sqrt(tx * tx + ty * ty)
+        flash_type = 0
+        dir_x = cos(player_rotation_)
+        dir_y = sin(player_rotation_)
+        dir_len = cached_sqrt(dir_x * dir_x + dir_y * dir_y)
 
         for (i = 0; i < len; i++) {
             x = o_x_[i] - player_x_
             y = o_y_[i] - player_y_
 
             o_dist_[i] = cached_sqrt(x * x + y * y) /* distance */
-            o_angl_[i] = cached_acos((tx * x + ty * y) / (o_dist_[i] * z))
-            if (tx * y - ty * x < 0) o_angl_[i] = -o_angl_[i]
+            o_angl_[i] = cached_acos((dir_x * x + dir_y * y) / (o_dist_[i] * dir_len))
+            if (dir_x * y - dir_y * x < 0) o_angl_[i] = -o_angl_[i]
         }
 
         sort_o(len)
 
         for (i = 0; i < len; i++) {
-            ht = (64 / o_dist_[i] * dist_to_proj_plane_) $
-            k = (player_eye_level_ - ht / 2) $
-            l = (player_eye_level_ + ht / 2) $
+            sprite_height = (64 / o_dist_[i] * dist_to_proj_plane_) $
+            sprite_top = (player_eye_level_ - sprite_height / 2) $
+            sprite_bottom = (player_eye_level_ + sprite_height / 2) $
 
-            if (k < 0) k = 0
+            if (sprite_top < 0) sprite_top = 0
 
             /* if i is zero then it is a monster, otherwise it is health */
             if (o_type_[i]) {
-                pat = sp_enemy
-                pat_mask = sp_enemymask
+                sprite_pattern = sp_enemy
+                sprite_mask = sp_enemymask
             } else {
-                pat = sp_health
-                pat_mask = sp_healthmask
+                sprite_pattern = sp_health
+                sprite_mask = sp_healthmask
             }
 
-            o_lx_[i] = (w_ / 2 + o_angl_[i] / r_ - ht / 2) $
-            o_rx_[i] = o_lx_[i] + ht
+            o_lx_[i] = (w_ / 2 + o_angl_[i] / r_ - sprite_height / 2) $
+            o_rx_[i] = o_lx_[i] + sprite_height
 
             if (o_dead_[i]) { /* determines if the object is dead */
                 if (o_type_[i]) { /* if this is a monster */
-                    pat = sp_dead /* set it to a dead monster sprite */
-                    pat_mask = sp_deadmask
+                    sprite_pattern = sp_dead /* set it to a dead monster sprite */
+                    sprite_mask = sp_deadmask
                 } else {
                     continue
                 }
@@ -823,14 +824,14 @@ define void tick() {
             if (o_type_[i] && !player_dead_ && o_vis_[i] == 1 && !o_dead_[i] && frand(2) < .05) {
                 /* player hit */
                 player_health_ -= irand(8)
-                cz = 2
+                flash_type = 2
                 if (player_health_ < 0) {
                     player_dead_ = 1 /* player is dead */
                     player_eye_level_ = h_ / 8 /* set the camera Y to 64/8 (fall down) */
                 }
             }
 
-            if (o_dist_[i] > 64 && draw_sprite(pat, pat_mask, k, o_lx_[i], l, o_rx_[i], o_dist_[i], 1)) {
+            if (o_dist_[i] > 64 && draw_sprite(sprite_pattern, sprite_mask, sprite_top, o_lx_[i], sprite_bottom, o_rx_[i], o_dist_[i], 1)) {
                 o_vis_[i] = 1 /* 1 indicates the monster is visible */
             } else {
                 o_vis_[i] += 1 /* otherwise count frames monster not visible to player */
@@ -847,7 +848,7 @@ define void tick() {
             img__setpixel(canvas[], w_ - 2 - i, h_ + 3, black_)
         }
 
-        show_screen(cz)
+        show_screen(flash_type)
     }
 }
 
