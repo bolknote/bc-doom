@@ -595,7 +595,7 @@ define void ray_cast() {
             wall_y  = horiz_hit_y   /* map y position */
         }
 
-        wall_dist *= cos(ray_angle - player_rotation_)
+        wall_dist *= cos(angle_offset)
 
         z_[col] = wall_dist /* z-buffer, wall_dist is the depth of the scanline */
 
