@@ -103,7 +103,7 @@ define void swap_array(*arr[], pos1, pos2) {
 
 /* base64 encode array and print */
 define void base64_encode_and_print(bytes[]) {
-    auto i, codes, chunk, len, b, bit, b6, index
+    auto i, len, b, bit, b6, index
 
     len = length(bytes[])
 
@@ -157,7 +157,7 @@ define void img__new(*img[], w, h, bg) {
 
 /* helper for packing binary data */
 define v_pack(*bytes[], bsize, offset, d) {
-    auto i, m
+    auto i, m[]
 
     scale = 0
     for (i = 0; i < bsize / 8; i++) {
@@ -170,7 +170,7 @@ define v_pack(*bytes[], bsize, offset, d) {
 
 /* create mono BMP, encode by base64 and print */
 define void img__monobmp(img[], colors[]) {
-    auto b, s, bmp, size, i, x, y, wh, p, byte
+    auto b, s, bmp[], size, i, x, y, wh, p, byte
 
     scale = 0
 
@@ -234,7 +234,7 @@ define void img__setpixel(*img[], x, y, color) {
 
 /* Draw bitmap */
 define void img__number_bitmap(*img[], x, y, number, w, h, invert) {
-    auto ix, iy, pixel
+    auto ix, iy, pixel[]
     scale = 0
     for (iy = 0; iy < h; iy++) for (ix = 0; ix < w; ix++) {
         number = divmod(number, 2, pixel[])
@@ -452,7 +452,7 @@ define void clear_terminal() {
 
 
 define void show_screen(cz) {
-    auto colors
+    auto colors[]
 
     if (cz == 1) { /* invert */
         colors[0] = colors[1] = colors[2] = 255
