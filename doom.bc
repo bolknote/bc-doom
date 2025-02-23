@@ -18,13 +18,52 @@ echo -ne "\033[?25l"
 
 while {}; do
     v=
-    read -rs -k1 -t0.4 v
+    read -rs -k1 -t0.3 v
 
     case "${v:u}" in
         [WASDLJKM]) echo ${v:u};; " ") echo 1;; *) echo 0;;
     esac
 done | bc -g -Ll -f "$0"
 exit; */1
+
+define band(x, y) {
+    auto result, power, m[]
+    result = 0
+    power = 1
+    scale = 0
+
+    x = abs(x)$; y = abs(y)$
+
+    while (x && y) {
+        x = divmod(x, 2, m[])
+        if (m[0]) {
+            y = divmod(y, 2, m[])
+            if (m[0]) result += power
+        } else {
+            y /= 2
+        }
+
+        power *= 2
+    }
+    return result
+}
+
+define check_bit(x, y) {
+    auto result, m[]
+    result = 0
+    scale = 0
+
+    while (x && y) {
+        x = divmod(x, 2, m[])
+        if (m[0]) {
+            y = divmod(y, 2, m[])
+            result += m[0]
+        } else {
+            y /= 2
+        }
+    }
+    return result
+}
 
 define cnt_digits(x) {
     auto i
@@ -112,7 +151,7 @@ define void base64_encode_and_print(bytes[]) {
         for (b = 0; b < 24; b++) {
             index = i + b / 8
 
-            bit = (band(bytes[index] * (bits_[b % 8]), 128) && 1)
+            bit = check_bit(bytes[index] * (bits_[b % 8]), 128)
             b6 = b6 * 2 + bit
 
             if (mod(b, 6) == 5) {
@@ -431,8 +470,8 @@ define draw_sprite(sprite, sprite_mask, sy, sx, dy, dx, check, invert) {
                 for (y = sy; y < dy; y++) {
                     py = (16 * (y - sy) / height) $
 
-                    clr = (band(sp_[sprite + py], bits_[px]) && 1)
-                    msk = (band(sp_[sprite_mask + py], bits_[px]) && 1)
+                    clr = check_bit(sp_[sprite + py], bits_[px])
+                    msk = check_bit(sp_[sprite_mask + py], bits_[px])
 
                     if (msk) {
                         img__setpixel(canvas[], x, y, bxor(clr, invert))
@@ -653,7 +692,7 @@ define void ray_cast() {
                 tex_row = bshr((y - wall_draw_start_y) / wall_height * 64, 2)
             }
 
-            tex_bit = (band(sp_[sprite_id + tex_row], bits_[tex_col]) && 1)
+            tex_bit = check_bit(sp_[sprite_id + tex_row], bits_[tex_col])
 
             skip_pixel = (tex_bit || /* is the color 1 or 0? */ \
                 (col && prev_wall_side != wall_side) || /* is col 0 and prev_wall_side not equal to wall_side (prev_wall_side is the prior version of wall_side) */ \
