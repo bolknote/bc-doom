@@ -650,7 +650,7 @@ define void ray_cast() {
         /* tex_col is the x pixel position in the texture
            tex_coord will go from 0 to 63 so dividing by 4 gets us 0 to 15*/
 
-        tex_col = bshr(tex_coord, 2)
+        tex_col = (tex_coord / 4)$
 
         if (dist_delta > 64 && prev_height > wall_height) {  /* prev_height is the previous scanline height */
             wall_height = prev_height
@@ -684,12 +684,12 @@ define void ray_cast() {
         /* start at the top of the scanline and work down */
         for (y = draw_top; y < draw_bottom; y++) {
             /* the row of pixels is based on the current y
-             y position. >>2 divides by 4.  64/4==16 */
+             y position */
 
             if (y - wall_draw_start_y < 0) {
-                tex_row = bshr(ceil((y - wall_draw_start_y) / wall_height * 64, 0), 2)
+                tex_row = (ceil((y - wall_draw_start_y) / wall_height * 64, 0) / 4)$
             } else {
-                tex_row = bshr((y - wall_draw_start_y) / wall_height * 64, 2)
+                tex_row = (((y - wall_draw_start_y) / wall_height * 64) / 4)$
             }
 
             tex_bit = check_bit(sp_[sprite_id + tex_row], bits_[tex_col])
