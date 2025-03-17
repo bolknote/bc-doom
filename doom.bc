@@ -209,27 +209,32 @@ define v_pack(*bytes[], bsize, offset, d) {
 
 /* create mono BMP, encode by base64 and print */
 define void img__monobmp(img[], colors[]) {
-    auto b, s, bmp[], size, i, x, y, wh, p, byte
+    auto b, s, bmp[], i, x, y, wh, p, byte
 
     scale = 0
 
     wh = ceil(img[0] / 8, 0)
-    size = wh * img[1]
 
-    bmp[s++] = 66; bmp[s++] = 77     /* BM */
-    s = v_pack(bmp[], 32, s, 0)      /* space for Length */
+    if (header_[0]) {
+        s = length(header_[])
+    } else {
+        header_[s++] = 66; header_[s++] = 77  /* BM */
+        s = v_pack(header_[], 32, s, 0)       /* space for Length */
 
-    /* Main header */
-    s = v_pack(bmp[], 16, s, 0)      /* Reserved */
-    s = v_pack(bmp[], 16, s, 0)      /* Reserved */
-    s = v_pack(bmp[], 32, s, 32)     /* Offset of image data */
+        /* Main header */
+        s = v_pack(header_[], 16, s, 0)       /* Reserved */
+        s = v_pack(header_[], 16, s, 0)       /* Reserved */
+        s = v_pack(header_[], 32, s, 32)      /* Offset of image data */
 
-    /* Subheader */
-    s = v_pack(bmp[], 32, s, 12)      /* Subheader length */
-    s = v_pack(bmp[], 16, s, img[0])  /* Width */
-    s = v_pack(bmp[], 16, s, img[1])  /* Height */
-    s = v_pack(bmp[], 16, s, 1)       /* Planes */
-    s = v_pack(bmp[], 16, s, 1)       /* Bit count */
+        /* Subheader */
+        s = v_pack(header_[], 32, s, 12)      /* Subheader length */
+        s = v_pack(header_[], 16, s, img[0])  /* Width */
+        s = v_pack(header_[], 16, s, img[1])  /* Height */
+        s = v_pack(header_[], 16, s, 1)       /* Planes */
+        s = v_pack(header_[], 16, s, 1)       /* Bit count */
+    }
+
+    for (i = 0; i < s; i++) bmp[i] = header_[i]
 
     /* Color table */
     for (i = 0; i < 6; i++) bmp[s++] = colors[i]
@@ -243,7 +248,7 @@ define void img__monobmp(img[], colors[]) {
                 byte = byte * 2 + img[2 + x + b + y * img[0]]
 
                 if (x + b >= img[0]) {
-                    byte = bshl(byte, wh - img[0])
+                    byte *= bits_[wh - img[0]]
                 }
             }
             bmp[s++] = byte
@@ -291,6 +296,7 @@ map_size_ = 16 /* 16×16 */
 /*
 map_ — map (16×16)
 z_ - z-buffer(128)
+header_ - BMP header cache
 */
 
 player_points_ = num_killed_ = num_monsters_ = player_rotation_ = player_x_ = player_y_ = game_level_ =\
