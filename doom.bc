@@ -16,7 +16,7 @@ trap 'stty "$ORIG";printf "\033[?25h"' INT TERM EXIT
 stty -echo
 echo -ne "\033[?25l"
 
-while {}; do
+while; do
     v=
     read -rs -k1 -t0.3 v
 
