@@ -363,14 +363,15 @@ define void draw_number(number, x, y, invert) {
     auto len, i, digit, m
 
     len = length(number)
+    m = 10 ^ (len - 1)
 
     for (i = 0; i<len; i++) {
-        m = 10 ^ (len - i - 1)
         digit = (number / m) $
         number -= digit * m
 
         img__number_bitmap(canvas[], x, y, font[digit], 3, 5, invert)
         x += 4
+        m /= 10
     }
 }
 
